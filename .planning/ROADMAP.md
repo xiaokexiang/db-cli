@@ -104,7 +104,11 @@ Plans:
 2. Errors are logged to `~/.db-cli/error.log` with timestamp, command, error code, and message
 3. User can review command history for audit purposes
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Logging infrastructure (history.log, error.log, password redaction)
+- [ ] 03-02-PLAN.md — history and errors commands (view logs with --last, --format flags)
 
 ---
 
@@ -163,8 +167,8 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. MySQL Core Execution | 5/5 | Complete | 01-01: Project Setup ✓, 01-02: Connection Layer ✓, 01-03: CLI Root Command ✓, 01-04: Exec Command ✓, 01-05: Error Handling, Transactions, Import ✓ |
-| 2. Schema Inspection & Import/Export | 0/3 | Not started | - |
-| 3. Logging & Polish | 0/2 | Not started | - |
+| 2. Schema Inspection & Import/Export | 3/3 | Complete | 02-01: Table/CSV Formatters ✓, 02-02: Desc Command ✓, 02-03: Export Command ✓ |
+| 3. Logging & Polish | 0/2 | Planned | - |
 | 4. Dameng & Skill Integration | 0/2 | Not started | - |
 
 ---
