@@ -7,7 +7,11 @@
       "WebFetch(domain:www.pgcli.com)",
       "WebFetch(domain:gosamples.dev)",
       "WebFetch(domain:cobra.dev)",
-      "WebFetch(domain:eco.dameng.com)"
+      "WebFetch(domain:eco.dameng.com)",
+      "Bash(go build:*)",
+      "Bash(./db-cli.exe --help)",
+      "Bash(./db-cli.exe -h 10.50.13.41 -P 3316 -u root -p '123$abc' -d bocloud_upms exec 'SELECT 1 as test' 2>&1)",
+      "Bash(./db-cli.exe -h 10.50.13.41 -P 3316 -u root -p '123$abc' -d bocloud_upms exec 'select * from bocloud_upms.upms_core_account limit 10;' 2>&1)"
     ]
   }
 }
