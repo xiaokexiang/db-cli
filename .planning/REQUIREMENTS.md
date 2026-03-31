@@ -145,8 +145,8 @@
 | LOG-02 | Phase 3 | Pending |
 | SKILL-01 | Phase 4 | Pending |
 | SKILL-02 | Phase 4 | Pending |
-| PLATFORM-01 | Phase 1 | Pending |
-| PLATFORM-02 | Phase 1 | Pending |
+| PLATFORM-01 | Phase 1 | Complete |
+| PLATFORM-02 | Phase 1 | Complete |
 
 ---
 
