@@ -4,11 +4,11 @@
 
 ### Connection (CONN)
 
-- [ ] **CONN-01**: 支持通过 flag 指定数据库连接参数
+- [x] **CONN-01**: 支持通过 flag 指定数据库连接参数
   - Flags: `-h/--host`, `-P/--port`, `-u/--user`, `-p/--password`, `-d/--database`, `-t/--type`
   - 数据库类型：`mysql`, `dameng`
   - 密码支持从 stdin 读取（`--password=-`）避免命令行暴露
-- [ ] **CONN-02**: MySQL 数据库连接
+- [x] **CONN-02**: MySQL 数据库连接
   - 使用 GORM + go-sql-driver/mysql v1.9.3
   - 支持 MySQL 5.7+ 和 8.x
 - [ ] **CONN-03**: 达梦数据库连接
@@ -125,8 +125,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONN-01 | Phase 1 | Pending |
-| CONN-02 | Phase 1 | Pending |
+| CONN-01 | Phase 1 | Complete |
+| CONN-02 | Phase 1 | Complete |
 | CONN-03 | Phase 2 | Pending |
 | EXEC-01 | Phase 1 | Pending |
 | EXEC-02 | Phase 1 | Pending |
