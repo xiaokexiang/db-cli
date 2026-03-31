@@ -78,7 +78,12 @@ Plans:
 6. User can export entire table with structure and data
 7. User can change output format: `--format=table` or `--format=csv`
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Table and CSV output formatters (DQL-02)
+- [ ] 02-02-PLAN.md — desc command for schema inspection (DESC-01~04, CONN-03)
+- [ ] 02-03-PLAN.md — export command for data export (IO-02, IO-03)
 
 **UI hint:** yes
 
@@ -158,7 +163,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. MySQL Core Execution | 5/5 | Complete | 01-01: Project Setup ✓, 01-02: Connection Layer ✓, 01-03: CLI Root Command ✓, 01-04: Exec Command ✓, 01-05: Error Handling, Transactions, Import ✓ |
-| 2. Schema Inspection & Import/Export | 0/7 | Not started | - |
+| 2. Schema Inspection & Import/Export | 0/3 | Not started | - |
 | 3. Logging & Polish | 0/2 | Not started | - |
 | 4. Dameng & Skill Integration | 0/2 | Not started | - |
 
