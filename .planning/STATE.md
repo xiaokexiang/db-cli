@@ -23,7 +23,7 @@ progress:
 
 **Core Value:** Let users complete database operations via natural language or simple commands without memorizing complex SQL syntax and connection parameters, while maintaining full control over the database.
 
-**Current Focus:** Phase 02 — Schema Inspection & Import/Export
+**Current Focus:** Phase 3 — Logging & Polish
 
 **Key Constraints:**
 
@@ -36,14 +36,12 @@ progress:
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
 | | |
 |---|---|
-| **Phase** | 1 — MySQL Core Execution |
-| **Plan** | 05 — Error Handling, Transactions, Import ✓ Complete |
-| **Status** | Phase 1 Complete (5/5 plans complete) |
-| **Progress** | ████████████████████ 25% (1/4 phases) |
+| **Phase** | 3 — Logging & Polish |
+| **Plan** | Not started |
+| **Status** | Phase 2 Complete (3/3 plans complete) |
+| **Progress** | ████████████████████████████████████████ 50% (2/4 phases) |
 
 ---
 
@@ -65,7 +63,8 @@ Plan: Not started
 |----------|------|-----------|
 | MySQL-first MVP | 2026-03-31 | Avoids CGO/Dameng complexity in Phase 1; validates core patterns before multi-database support |
 | Phase structure derived from requirements | 2026-03-31 | Natural delivery boundaries: Core → Schema → Logging → Extension |
-| CONN-03 deferred to Phase 2 | 2026-03-31 | Dameng driver needs validation; prevents Phase 1 blocker |
+| CONN-03 deferred to Phase 4 | 2026-03-31 | Dameng driver needs validation; prevents Phase 1 blocker |
+| Table/CSV formatters use standard library | 2026-03-31 | MVP avoids external dependencies; pure Go implementation |
 
 ### Open Questions
 
@@ -80,23 +79,28 @@ Plan: Not started
 
 ## Session Continuity
 
-**Last Session:** Plan 05 execution - Error Handling, Transactions, Import Command
+**Last Session:** Phase 2 complete - Schema Inspection & Import/Export
 
-**Next Action:** Phase 1 complete - Ready for Phase 2: Schema Inspection & Import/Export
+**Next Action:** Phase 3: Logging & Polish - Command history and error logging
 
 **Context to Carry:**
 
 - Granularity: standard
 - Mode: yolo
 - Dependencies verified: Cobra v1.10.2, GORM v1.31.1, MySQL v1.9.3
-- Plan 01 complete: go.mod, go.sum, .gitignore, Makefile all created
-- Plan 02 complete: internal/database/connection.go, connection_test.go (10 tests passing)
-- Plan 03 complete: main.go, cmd/root.go, cmd/version.go with global connection flags
-- Plan 04 complete: cmd/exec.go, cmd/exec_test.go, internal/output/json.go
-- Plan 05 complete: cmd/error_handler.go, cmd/import.go, enhanced transaction support
-- Exec command provides: single SQL execution, SQL file execution, JSON output, error handling with line numbers, transaction control
-- Connection layer provides: ConnectionConfig, BuildDSN, OpenConnection, CloseConnection
-- Import command: semantic alias for exec --file
+- Phase 1 complete: exec command with JSON/table/CSV output, error handling, transactions
+- Phase 2 complete: desc command (schema inspection), export command (data export)
+- New commands:
+  - `db-cli desc --table=xxx` - View table structure (JSON output)
+  - `db-cli desc --table=xxx --indexes` - View indexes
+  - `db-cli desc --table=xxx --foreign-keys` - View foreign keys
+  - `db-cli desc --databases` - List databases
+  - `db-cli desc --tables` - List tables
+  - `db-cli export --query="SELECT..." --output=file.sql` - Export query results
+  - `db-cli export --table=xxx --format=ddl` - Export table structure + data
+- New output formats: --format=table (ASCII), --format=csv (RFC 4180)
+- Schema helpers: GetTableColumns, GetIndexes, GetForeignKeys, ListDatabases, ListTables
+- Export helpers: ToInsert (INSERT statements), GetCreateTable (DDL)
 
 ---
 
@@ -112,4 +116,4 @@ Plan: Not started
 
 ---
 
-*Last updated: 2026-03-31 - Plan 05 complete, Phase 1 done*
+*Last updated: 2026-03-31 - Phase 2 complete, ready for Phase 3*
