@@ -42,7 +42,14 @@
 4. SQL file execution stops on error with non-zero exit code and error message
 5. Query results output as JSON array (one object per row)
 
-**Plans:** TBD
+**Plans:** 5 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Project Setup & Dependencies (go.mod, .gitignore, Makefile)
+- [ ] 01-02-PLAN.md — Database Connection Layer (GORM + MySQL DSN)
+- [ ] 01-03-PLAN.md — CLI Root Command (Cobra flags, version cmd)
+- [ ] 01-04-PLAN.md — Exec Command (SQL execution, JSON output)
+- [ ] 01-05-PLAN.md — Error Handling & Transactions (exit codes, rollback)
 
 ---
 
@@ -150,7 +157,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MySQL Core Execution | 0/10 | Not started | - |
+| 1. MySQL Core Execution | 0/5 | Planned | - |
 | 2. Schema Inspection & Import/Export | 0/7 | Not started | - |
 | 3. Logging & Polish | 0/2 | Not started | - |
 | 4. Dameng & Skill Integration | 0/2 | Not started | - |
