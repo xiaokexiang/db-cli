@@ -45,11 +45,11 @@
 **Plans:** 5 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Project Setup & Dependencies (go.mod, .gitignore, Makefile)
-- [ ] 01-02-PLAN.md — Database Connection Layer (GORM + MySQL DSN)
-- [ ] 01-03-PLAN.md — CLI Root Command (Cobra flags, version cmd)
-- [ ] 01-04-PLAN.md — Exec Command (SQL execution, JSON output)
-- [ ] 01-05-PLAN.md — Error Handling, Transactions, Import Command (exit codes, rollback, D-14)
+- [x] 01-01-PLAN.md — Project Setup & Dependencies (go.mod, .gitignore, Makefile)
+- [x] 01-02-PLAN.md — Database Connection Layer (GORM + MySQL DSN)
+- [x] 01-03-PLAN.md — CLI Root Command (Cobra flags, version cmd)
+- [x] 01-04-PLAN.md — Exec Command (SQL execution, JSON output)
+- [x] 01-05-PLAN.md — Error Handling, Transactions, Import Command (exit codes, rollback, D-14)
 
 ---
 
@@ -157,7 +157,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MySQL Core Execution | 4/5 | Executing | 01-01: Project Setup ✓, 01-02: Connection Layer ✓, 01-03: CLI Root Command ✓, 01-04: Exec Command ✓ |
+| 1. MySQL Core Execution | 5/5 | Complete | 01-01: Project Setup ✓, 01-02: Connection Layer ✓, 01-03: CLI Root Command ✓, 01-04: Exec Command ✓, 01-05: Error Handling, Transactions, Import ✓ |
 | 2. Schema Inspection & Import/Export | 0/7 | Not started | - |
 | 3. Logging & Polish | 0/2 | Not started | - |
 | 4. Dameng & Skill Integration | 0/2 | Not started | - |

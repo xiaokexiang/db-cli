@@ -23,7 +23,7 @@
 - [x] **EXEC-02**: 执行 SQL 文件
   - 命令：`db-cli exec -h ... -u ... -p ... -d ... --file=xxx.sql`
   - 支持大文件（逐条解析执行）
-- [ ] **EXEC-03**: 错误处理
+- [x] **EXEC-03**: 错误处理
   - SQL 文件执行遇到错误立即停止
   - 显示错误码和错误信息
   - 返回非零退出码
@@ -56,7 +56,7 @@
 
 ### Import/Export (IO)
 
-- [ ] **IO-01**: 导入 SQL 文件
+- [x] **IO-01**: 导入 SQL 文件
   - 命令：`db-cli import -h ... -u ... -p ... -d ... --file=xxx.sql`
   - 等价于 `exec --file`，语义更清晰
 - [ ] **IO-02**: 导出查询结果
@@ -130,7 +130,7 @@
 | CONN-03 | Phase 2 | Pending |
 | EXEC-01 | Phase 1 | Complete |
 | EXEC-02 | Phase 1 | Complete |
-| EXEC-03 | Phase 1 | Pending |
+| EXEC-03 | Phase 1 | Complete |
 | EXEC-04 | Phase 1 | Complete |
 | DQL-01 | Phase 1 | Complete |
 | DQL-02 | Phase 2 | Pending |
@@ -150,4 +150,4 @@
 
 ---
 
-*Last updated: 2026-03-31 after research*
+*Last updated: 2026-03-31 - Plan 05 complete, Phase 1 done*
