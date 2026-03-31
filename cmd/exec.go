@@ -405,14 +405,22 @@ func outputJSON(rows *sql.Rows) error {
 	return nil
 }
 
-// outputTable outputs query results as ASCII table (placeholder)
+// outputTable outputs query results as ASCII table
 func outputTable(rows *sql.Rows) error {
-	// TODO: Implement table formatter
-	return fmt.Errorf("table format not yet implemented")
+	result, err := output.ToTable(rows)
+	if err != nil {
+		return fmt.Errorf("failed to format table: %w", err)
+	}
+	fmt.Println(result)
+	return nil
 }
 
-// outputCSV outputs query results as CSV (placeholder)
+// outputCSV outputs query results as CSV
 func outputCSV(rows *sql.Rows) error {
-	// TODO: Implement CSV formatter
-	return fmt.Errorf("csv format not yet implemented")
+	result, err := output.ToCSV(rows, ',')
+	if err != nil {
+		return fmt.Errorf("failed to format CSV: %w", err)
+	}
+	fmt.Print(result)
+	return nil
 }

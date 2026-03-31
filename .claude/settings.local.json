@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:gorm.io)",
+      "WebFetch(domain:www.pgcli.com)",
+      "WebFetch(domain:gosamples.dev)",
+      "WebFetch(domain:cobra.dev)",
+      "WebFetch(domain:eco.dameng.com)"
+    ]
+  }
+}
