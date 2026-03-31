@@ -25,8 +25,8 @@
 | | |
 |---|---|
 | **Phase** | 1 — MySQL Core Execution |
-| **Plan** | Not started |
-| **Status** | Roadmap created |
+| **Plan** | ✓ Planned (5 plans, 5 waves) |
+| **Status** | Ready for execution |
 | **Progress** | ████████████████████ 0% (0/4 phases) |
 
 ---
