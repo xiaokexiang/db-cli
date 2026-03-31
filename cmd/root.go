@@ -1,26 +1,57 @@
 package cmd
 
 import (
+	"bufio"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+
 	"github.com/spf13/cobra"
-	"gorm.io/gorm"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/xiaokexiang/db-cli/internal/database"
 )
+
+var cfg database.ConnectionConfig
 
 var rootCmd = &cobra.Command{
 	Use:   "db-cli",
-	Short: "Database CLI tool",
-	Long:  `A cross-platform database CLI tool using GORM for MySQL and Dameng databases.`,
+	Short: "Database CLI tool for MySQL and Dameng",
+	Long: `A cross-platform database CLI tool using GORM for MySQL and Dameng databases.
+Execute SQL statements, import/export data, and inspect database schemas.`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Handle password=- (read from stdin)
+		if cfg.Password == "-" {
+			reader := bufio.NewReader(os.Stdin)
+			password, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					return fmt.Errorf("failed to read password from stdin: %w", err)
+				}
+				// EOF is ok if we got some password
+			}
+			cfg.Password = strings.TrimRight(password, "\n\r")
+		}
+		return nil
+	},
 }
 
-func Execute() error {
-	return rootCmd.Execute()
-}
-
-// InitializeDB creates a GORM database connection
-func InitializeDB(dsn string) (*gorm.DB, error) {
-	return gorm.Open(nil, nil)
+// Execute runs the root command
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
 
 func init() {
-	// Root command initialization
+	// Define persistent flags for connection parameters
+	rootCmd.PersistentFlags().StringVarP(&cfg.Host, "host", "h", "localhost", "Database host")
+	rootCmd.PersistentFlags().IntVarP(&cfg.Port, "port", "P", 3306, "Database port")
+	rootCmd.PersistentFlags().StringVarP(&cfg.User, "user", "u", "", "Database user (required)")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Password, "password", "p", "", "Database password (use '-' to read from stdin)")
+	rootCmd.PersistentFlags().StringVarP(&cfg.Database, "database", "d", "", "Database name (required)")
+	rootCmd.PersistentFlags().StringVarP(&cfg.DBType, "type", "t", "mysql", "Database type (mysql, dameng)")
+
+	// Mark required flags
+	rootCmd.MarkFlagRequired("user")
+	rootCmd.MarkFlagRequired("database")
 }
