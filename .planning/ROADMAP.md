@@ -119,6 +119,7 @@ Plans:
 **Depends on:** Phase 3
 
 **Requirements:**
+- CONN-03: 达梦数据库连接（使用 GORM + dm-go-driver）
 - SKILL-01: Claude Code Skill (natural language to db-cli command)
 - SKILL-02: 自动下载 (Skill installs db-cli from GitHub Releases)
 
@@ -143,7 +144,7 @@ Plans:
 |-------------|-------|--------|
 | CONN-01 | Phase 1 | Pending |
 | CONN-02 | Phase 1 | Pending |
-| CONN-03 | Phase 2 | Pending |
+| CONN-03 | Phase 4 | Pending |
 | EXEC-01 | Phase 1 | Pending |
 | EXEC-02 | Phase 1 | Pending |
 | EXEC-03 | Phase 1 | Pending |
