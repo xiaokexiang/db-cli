@@ -18,6 +18,8 @@ var rootCmd = &cobra.Command{
 	Short: "Database CLI tool for MySQL and Dameng",
 	Long: `A cross-platform database CLI tool using GORM for MySQL and Dameng databases.
 Execute SQL statements, import/export data, and inspect database schemas.`,
+	// Disable default help command and flag to use -h for host
+	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Handle password=- (read from stdin)
 		if cfg.Password == "-" {
@@ -37,12 +39,19 @@ Execute SQL statements, import/export data, and inspect database schemas.`,
 
 // Execute runs the root command
 func Execute() {
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
+	// Disable the default help flag to use -h for host
+	rootCmd.SetHelpCommand(&cobra.Command{
+		Hidden: true,
+	})
+	rootCmd.PersistentFlags().BoolP("help", "?", false, "Show help")
+
 	// Define persistent flags for connection parameters
 	rootCmd.PersistentFlags().StringVarP(&cfg.Host, "host", "h", "localhost", "Database host")
 	rootCmd.PersistentFlags().IntVarP(&cfg.Port, "port", "P", 3306, "Database port")
@@ -51,7 +60,5 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfg.Database, "database", "d", "", "Database name (required)")
 	rootCmd.PersistentFlags().StringVarP(&cfg.DBType, "type", "t", "mysql", "Database type (mysql, dameng)")
 
-	// Mark required flags
-	rootCmd.MarkFlagRequired("user")
-	rootCmd.MarkFlagRequired("database")
+	// Note: Required flag validation (user, database) is handled by commands that need database connections
 }
