@@ -127,7 +127,13 @@ Plans:
 2. Claude Code Skill can parse natural language and generate db-cli commands
 3. Skill installation automatically downloads db-cli binary from GitHub Releases
 
-**Plans:** TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Dameng driver integration (CONN-03, DSN builder, GORM connection)
+- [ ] 04-02-PLAN.md — Skill MCP server foundation (project structure, binary path management)
+- [ ] 04-03-PLAN.md — Skill tools implementation (count, desc, export, import, exec with template matching)
+- [ ] 04-04-PLAN.md — Skill installer and GitHub Actions (auto-download from Releases, CI/CD)
 
 ---
 
@@ -169,7 +175,7 @@ Plans:
 | 1. MySQL Core Execution | 5/5 | Complete | 01-01: Project Setup ✓, 01-02: Connection Layer ✓, 01-03: CLI Root Command ✓, 01-04: Exec Command ✓, 01-05: Error Handling, Transactions, Import ✓ |
 | 2. Schema Inspection & Import/Export | 3/3 | Complete | 02-01: Table/CSV Formatters ✓, 02-02: Desc Command ✓, 02-03: Export Command ✓ |
 | 3. Logging & Polish | 0/2 | Planned | - |
-| 4. Dameng & Skill Integration | 0/2 | Not started | - |
+| 4. Dameng & Skill Integration | 0/4 | Not started | - |
 
 ---
 
@@ -185,3 +191,16 @@ Plans:
 - Dameng driver (dm-go-driver) needs validation during Phase 2 planning; may require fallback strategy
 - CGO requirements for Dameng may complicate cross-platform builds; document platform-specific steps
 - CONN-03 (Dameng connection) placed in Phase 2 to allow driver validation before full integration
+
+---
+
+## Phase 4 Wave Structure
+
+| Wave | Plans | Description |
+|------|-------|-------------|
+| Wave 1 | 04-01, 04-02 | Dameng driver (Go) + Skill foundation (TypeScript) — independent, parallel |
+| Wave 2 | 04-03, 04-04 | Skill tools + Installer — depend on Wave 1 foundations |
+
+---
+
+*Last updated: 2026-03-31 - Phase 4 planned*
