@@ -157,7 +157,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MySQL Core Execution | 3/5 | Executing | 01-01: Project Setup ✓, 01-02: Connection Layer ✓, 01-03: CLI Root Command ✓ |
+| 1. MySQL Core Execution | 4/5 | Executing | 01-01: Project Setup ✓, 01-02: Connection Layer ✓, 01-03: CLI Root Command ✓, 01-04: Exec Command ✓ |
 | 2. Schema Inspection & Import/Export | 0/7 | Not started | - |
 | 3. Logging & Polish | 0/2 | Not started | - |
 | 4. Dameng & Skill Integration | 0/2 | Not started | - |

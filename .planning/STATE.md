@@ -25,8 +25,8 @@
 | | |
 |---|---|
 | **Phase** | 1 — MySQL Core Execution |
-| **Plan** | 03 — CLI Root Command ✓ Complete |
-| **Status** | Executing Phase 1 (3/5 plans complete) |
+| **Plan** | 04 — Exec Command ✓ Complete |
+| **Status** | Executing Phase 1 (4/5 plans complete) |
 | **Progress** | ████████████████████ 25% (1/4 phases) |
 
 ---
@@ -65,9 +65,9 @@
 
 ## Session Continuity
 
-**Last Session:** Plan 03 execution - CLI Root Command
+**Last Session:** Plan 04 execution - Exec Command (SQL execution, JSON output)
 
-**Next Action:** Begin Plan 04: Exec Command (SQL execution, JSON output)
+**Next Action:** Begin Plan 05: Error Handling, Transactions, Import Command
 
 **Context to Carry:**
 - Granularity: standard
@@ -76,6 +76,8 @@
 - Plan 01 complete: go.mod, go.sum, .gitignore, Makefile all created
 - Plan 02 complete: internal/database/connection.go, connection_test.go (10 tests passing)
 - Plan 03 complete: main.go, cmd/root.go, cmd/version.go with global connection flags
+- Plan 04 complete: cmd/exec.go, cmd/exec_test.go, internal/output/json.go
+- Exec command provides: single SQL execution, SQL file execution, JSON output
 - Connection layer provides: ConnectionConfig, BuildDSN, OpenConnection, CloseConnection
 
 ---
@@ -92,4 +94,4 @@
 
 ---
 
-*Last updated: 2026-03-31*
+*Last updated: 2026-03-31 - Plan 04 complete*

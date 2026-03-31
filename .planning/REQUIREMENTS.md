@@ -17,23 +17,23 @@
 
 ### Execution (EXEC)
 
-- [ ] **EXEC-01**: 执行单条 SQL 语句
+- [x] **EXEC-01**: 执行单条 SQL 语句
   - 命令：`db-cli exec -h ... -u ... -p ... -d ... 'SELECT ...'`
   - 支持所有 SQL 类型（SELECT/INSERT/UPDATE/DELETE/DDL）
-- [ ] **EXEC-02**: 执行 SQL 文件
+- [x] **EXEC-02**: 执行 SQL 文件
   - 命令：`db-cli exec -h ... -u ... -p ... -d ... --file=xxx.sql`
   - 支持大文件（逐条解析执行）
 - [ ] **EXEC-03**: 错误处理
   - SQL 文件执行遇到错误立即停止
   - 显示错误码和错误信息
   - 返回非零退出码
-- [ ] **EXEC-04**: 事务控制
+- [x] **EXEC-04**: 事务控制
   - `--autocommit=true`（默认）：每条 SQL 自动提交
   - `--autocommit=false`：SQL 文件内的 BEGIN/COMMIT/ROLLBACK 生效
 
 ### Query (DQL)
 
-- [ ] **DQL-01**: JSON 格式输出
+- [x] **DQL-01**: JSON 格式输出
   - 默认输出格式
   - 数组包裹，每行一个 JSON 对象
 - [ ] **DQL-02**: 多格式支持
@@ -128,17 +128,17 @@
 | CONN-01 | Phase 1 | Complete |
 | CONN-02 | Phase 1 | Complete |
 | CONN-03 | Phase 2 | Pending |
-| EXEC-01 | Phase 1 | Pending |
-| EXEC-02 | Phase 1 | Pending |
+| EXEC-01 | Phase 1 | Complete |
+| EXEC-02 | Phase 1 | Complete |
 | EXEC-03 | Phase 1 | Pending |
-| EXEC-04 | Phase 1 | Pending |
-| DQL-01 | Phase 1 | Pending |
+| EXEC-04 | Phase 1 | Complete |
+| DQL-01 | Phase 1 | Complete |
 | DQL-02 | Phase 2 | Pending |
 | DESC-01 | Phase 2 | Pending |
 | DESC-02 | Phase 2 | Pending |
 | DESC-03 | Phase 2 | Pending |
 | DESC-04 | Phase 2 | Pending |
-| IO-01 | Phase 1 | Pending |
+| IO-01 | Phase 1 | Complete |
 | IO-02 | Phase 2 | Pending |
 | IO-03 | Phase 2 | Pending |
 | LOG-01 | Phase 3 | Pending |
