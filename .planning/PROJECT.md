@@ -12,30 +12,29 @@
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] **CONN-01**: 支持通过 flag 指定数据库连接参数 — Phase 1
+- [x] **CONN-02**: 支持 MySQL 数据库连接 — Phase 1
+- [x] **EXEC-01**: exec 命令支持执行单条 SQL 语句 — Phase 1
+- [x] **EXEC-02**: exec 命令支持执行 SQL 文件 — Phase 1
+- [x] **EXEC-03**: SQL 文件执行遇到错误时立即停止 — Phase 1
+- [x] **EXEC-04**: 支持 --autocommit flag 控制事务提交方式 — Phase 1
+- [x] **DQL-01**: 查询结果默认以 JSON 格式输出 — Phase 1
+- [x] **DQL-02**: 支持表格/CSV 等输出格式选项 — Phase 2
+- [x] **DDL-01**: desc 命令支持查看表结构 — Phase 2
+- [x] **DDL-02**: desc 命令支持查看索引和外键 — Phase 2
+- [x] **DDL-03**: desc 命令支持查看数据库元数据 — Phase 2
+- [x] **IO-01**: export 命令支持按查询导出为 SQL INSERT 语句 — Phase 2
+- [x] **IO-02**: export 命令支持导出 DDL 语句 — Phase 2
+- [x] **IO-03**: import 命令导入 SQL 文件 — Phase 2 (import 作为 exec --file 的别名)
+- [x] **PLATFORM-01**: 支持 Windows/macOS/Linux 跨平台编译 — Phase 1
 
 ### Active
 
-- [ ] **CONN-01**: 支持通过 flag 指定数据库连接参数（host/port/user/password/database/type）
-- [ ] **CONN-02**: 支持 MySQL 数据库连接（使用 GORM + go-sql-driver/mysql）
-- [ ] **CONN-03**: 支持达梦数据库连接（使用 GORM + dm-go-driver）
-- [ ] **EXEC-01**: exec 命令支持执行单条 SQL 语句
-- [ ] **EXEC-02**: exec 命令支持执行 SQL 文件
-- [ ] **EXEC-03**: SQL 文件执行遇到错误时立即停止并显示错误码和信息
-- [ ] **EXEC-04**: 支持 --autocommit flag 控制事务提交方式
-- [ ] **DQL-01**: 查询结果默认以 JSON 格式输出
-- [ ] **DQL-02**: 支持表格/CSV 等输出格式选项
-- [ ] **DDL-01**: desc 命令支持查看表结构（字段、类型、约束）
-- [ ] **DDL-02**: desc 命令支持查看索引和外键
-- [ ] **DDL-03**: desc 命令支持查看数据库元数据
-- [ ] **IO-01**: export 命令支持按查询导出为 SQL INSERT 语句
-- [ ] **IO-02**: export 命令支持导出 DDL 语句
-- [ ] **IO-03**: import 命令导入 SQL 文件
-- [ ] **LOG-01**: 记录命令历史（不含密码等敏感信息）
-- [ ] **LOG-02**: 记录错误日志
-- [ ] **SKILL-01**: Claude Code Skill 支持自然语言解析为 db-cli 命令
-- [ ] **SKILL-02**: Skill 安装时自动从 GitHub Releases 下载 db-cli
-- [ ] **PLATFORM-01**: 支持 Windows/macOS/Linux 跨平台编译
+- [ ] **CONN-03**: 支持达梦数据库连接（使用 GORM + dm-go-driver）— Phase 4
+- [ ] **LOG-01**: 记录命令历史（不含密码等敏感信息）— Phase 3
+- [ ] **LOG-02**: 记录错误日志 — Phase 3
+- [ ] **SKILL-01**: Claude Code Skill 支持自然语言解析为 db-cli 命令 — Phase 4
+- [ ] **SKILL-02**: Skill 安装时自动从 GitHub Releases 下载 db-cli — Phase 4
 
 ### Out of Scope
 
@@ -70,12 +69,14 @@
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| GORM 作为 ORM 层 | 统一 MySQL 和达梦连接方式，便于扩展 | — Pending |
-| 无环境配置设计 | 简化 CLI 设计，减少配置管理复杂度 | — Pending |
-| Skill + CLI 两层架构 | 分离关注点：AI 处理意图，CLI 专注执行 | — Pending |
-| 错误立即中断 | SQL 文件执行失败时避免级联错误 | — Pending |
-| JSON 默认输出 | 机器可读，便于后续处理 | — Pending |
-| 双仓库管理 | CLI 和 Skill 独立版本控制 | — Pending |
+| GORM 作为 ORM 层 | 统一 MySQL 和达梦连接方式，便于扩展 | Phase 1 完成 |
+| 无环境配置设计 | 简化 CLI 设计，减少配置管理复杂度 | Phase 1 完成 |
+| Skill + CLI 两层架构 | 分离关注点：AI 处理意图，CLI 专注执行 | Phase 4 计划 |
+| 错误立即中断 | SQL 文件执行失败时避免级联错误 | Phase 1 完成 |
+| JSON 默认输出 | 机器可读，便于后续处理 | Phase 1 完成 |
+| 双仓库管理 | CLI 和 Skill 独立版本控制 | Pending |
+| MySQL-first MVP | 避免 Phase 1 中的 CGO/达梦复杂性 | Phase 1-2 完成 |
+| Table/CSV 格式化器使用标准库 | MVP 不引入外部依赖 | Phase 2 完成 |
 
 ## Evolution
 
@@ -95,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-31 after initialization*
+*Last updated: 2026-03-31 after Phase 2 complete*
