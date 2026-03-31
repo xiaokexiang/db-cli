@@ -108,23 +108,42 @@ func executeSingleSQL(db *gorm.DB, sql string, format string) error {
 		// Execute query and get rows
 		result := db.Raw(sql)
 		if result.Error != nil {
-			return fmt.Errorf("failed to execute query: %w", result.Error)
+			return NewExecutionError(
+				"failed to execute query",
+				1,
+				result.Error,
+			)
 		}
 
 		// Scan rows directly using output.ScanRows which accepts *sql.Rows
 		rows, err := result.Rows()
 		if err != nil {
-			return fmt.Errorf("failed to get rows: %w", err)
+			return NewExecutionError(
+				"failed to get rows",
+				1,
+				err,
+			)
 		}
 		defer rows.Close()
 
 		// Format and output results
-		return formatOutput(rows, format)
+		if formatErr := formatOutput(rows, format); formatErr != nil {
+			return NewExecutionError(
+				"failed to format output",
+				1,
+				formatErr,
+			)
+		}
+		return nil
 	} else {
 		// Execute non-SELECT statement (INSERT, UPDATE, DELETE, DDL, etc.)
 		result := db.Exec(sql)
 		if result.Error != nil {
-			return fmt.Errorf("failed to execute statement: %w", result.Error)
+			return NewExecutionError(
+				"failed to execute statement",
+				1,
+				result.Error,
+			)
 		}
 
 		// Output rows affected
@@ -138,68 +157,116 @@ func executeSQLFile(db *gorm.DB, filePath string, format string, autocommit bool
 	// Read file content
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to read SQL file: %w", err)
+		return NewExecutionError(
+			"failed to read SQL file",
+			1,
+			err,
+		)
 	}
 
-	// Parse SQL statements (split by semicolon)
-	statements := parseSQLStatements(string(content))
+	// Parse SQL statements with line number tracking
+	statements := parseSQLStatementsWithLines(string(content))
 
 	if len(statements) == 0 {
-		return fmt.Errorf("no SQL statements found in file")
+		return NewExecutionError(
+			"no SQL statements found in file",
+			1,
+			nil,
+		)
 	}
 
 	// Execute statements
 	var lastRows *gorm.DB
 	statementCount := 0
 
-	for i, stmt := range statements {
-		stmt = strings.TrimSpace(stmt)
-		if stmt == "" {
-			continue
-		}
+	if autocommit {
+		// Each statement runs in its own implicit transaction
+		for i, stmt := range statements {
+			stmtSQL := strings.TrimSpace(stmt.SQL)
+			if stmtSQL == "" {
+				continue
+			}
 
-		if autocommit {
-			// Each statement is auto-committed
-			if isSelectQuery(stmt) {
+			if isSelectQuery(stmtSQL) {
 				// For SELECT, store last result for output
-				lastRows = db.Raw(stmt)
+				lastRows = db.Raw(stmtSQL)
 				if lastRows.Error != nil {
-					return fmt.Errorf("statement %d failed: %w", i+1, lastRows.Error)
+					return NewExecutionErrorWithLine(
+						fmt.Sprintf("statement %d failed", i+1),
+						1,
+						lastRows.Error,
+						stmt.Line,
+						stmtSQL,
+					)
 				}
 			} else {
 				// Non-SELECT: just execute
-				result := db.Exec(stmt)
+				result := db.Exec(stmtSQL)
 				if result.Error != nil {
-					return fmt.Errorf("statement %d failed: %w", i+1, result.Error)
+					return NewExecutionErrorWithLine(
+						fmt.Sprintf("statement %d failed", i+1),
+						1,
+						result.Error,
+						stmt.Line,
+						stmtSQL,
+					)
 				}
 				statementCount++
 			}
-		} else {
-			// Wrap all statements in a single transaction
-			tx := db.Begin()
-			if tx.Error != nil {
-				return fmt.Errorf("failed to begin transaction: %w", tx.Error)
+		}
+	} else {
+		// Wrap ALL statements in a single transaction
+		tx := db.Begin()
+		if tx.Error != nil {
+			return NewExecutionError(
+				"failed to begin transaction",
+				1,
+				tx.Error,
+			)
+		}
+
+		// Execute all statements within the transaction
+		for i, stmt := range statements {
+			stmtSQL := strings.TrimSpace(stmt.SQL)
+			if stmtSQL == "" {
+				continue
 			}
 
-			if isSelectQuery(stmt) {
-				lastRows = tx.Raw(stmt)
+			if isSelectQuery(stmtSQL) {
+				lastRows = tx.Raw(stmtSQL)
 				if lastRows.Error != nil {
 					tx.Rollback()
-					return fmt.Errorf("statement %d failed: %w", i+1, lastRows.Error)
+					return NewExecutionErrorWithLine(
+						fmt.Sprintf("statement %d failed", i+1),
+						1,
+						lastRows.Error,
+						stmt.Line,
+						stmtSQL,
+					)
 				}
 			} else {
-				result := tx.Exec(stmt)
+				result := tx.Exec(stmtSQL)
 				if result.Error != nil {
 					tx.Rollback()
-					return fmt.Errorf("statement %d failed: %w", i+1, result.Error)
+					return NewExecutionErrorWithLine(
+						fmt.Sprintf("statement %d failed", i+1),
+						1,
+						result.Error,
+						stmt.Line,
+						stmtSQL,
+					)
 				}
 				statementCount++
 			}
+		}
 
-			// Commit transaction
-			if commitErr := tx.Commit().Error; commitErr != nil {
-				return fmt.Errorf("failed to commit transaction: %w", commitErr)
-			}
+		// Commit transaction only if all statements succeed
+		if commitErr := tx.Commit().Error; commitErr != nil {
+			return NewExecutionError(
+				"failed to commit transaction",
+				1,
+				commitErr,
+			)
 		}
 	}
 
@@ -208,7 +275,13 @@ func executeSQLFile(db *gorm.DB, filePath string, format string, autocommit bool
 		rows, err := lastRows.Rows()
 		if err == nil {
 			defer rows.Close()
-			return formatOutput(rows, format)
+			if formatErr := formatOutput(rows, format); formatErr != nil {
+				return NewExecutionError(
+					"failed to format output",
+					1,
+					formatErr,
+				)
+			}
 		}
 	}
 
@@ -216,7 +289,72 @@ func executeSQLFile(db *gorm.DB, filePath string, format string, autocommit bool
 	return nil
 }
 
-// parseSQLStatements splits SQL content into individual statements
+// StatementWithLine holds a SQL statement with its starting line number
+type StatementWithLine struct {
+	SQL  string
+	Line int
+}
+
+// parseSQLStatementsWithLines splits SQL content into individual statements with line numbers
+func parseSQLStatementsWithLines(content string) []StatementWithLine {
+	lines := strings.Split(content, "\n")
+	var statements []StatementWithLine
+	var currentStmt strings.Builder
+	startLine := 1
+	currentLine := 1
+
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		// Track the start line of the current statement
+		if currentStmt.Len() == 0 && trimmedLine != "" {
+			startLine = currentLine
+		}
+
+		// Check if this line contains a semicolon (statement delimiter)
+		if strings.Contains(line, ";") {
+			// Add content before semicolon
+			parts := strings.SplitN(line, ";", 2)
+			currentStmt.WriteString(parts[0])
+
+			stmt := strings.TrimSpace(currentStmt.String())
+			if stmt != "" {
+				statements = append(statements, StatementWithLine{
+					SQL:  stmt,
+					Line: startLine,
+				})
+			}
+
+			// Reset for next statement
+			currentStmt.Reset()
+			if len(parts) > 1 && strings.TrimSpace(parts[1]) != "" {
+				currentStmt.WriteString(parts[1])
+				startLine = currentLine
+			}
+		} else {
+			// No semicolon, continue building the statement
+			if currentStmt.Len() > 0 {
+				currentStmt.WriteString("\n")
+			}
+			currentStmt.WriteString(line)
+		}
+
+		currentLine++
+	}
+
+	// Handle any remaining statement without trailing semicolon
+	stmt := strings.TrimSpace(currentStmt.String())
+	if stmt != "" {
+		statements = append(statements, StatementWithLine{
+			SQL:  stmt,
+			Line: startLine,
+		})
+	}
+
+	return statements
+}
+
+// parseSQLStatements splits SQL content into individual statements (legacy, for backward compatibility)
 func parseSQLStatements(content string) []string {
 	// Simple split by semicolon
 	// TODO: Handle semicolons inside strings properly
