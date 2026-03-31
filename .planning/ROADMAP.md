@@ -49,7 +49,7 @@ Plans:
 - [ ] 01-02-PLAN.md — Database Connection Layer (GORM + MySQL DSN)
 - [ ] 01-03-PLAN.md — CLI Root Command (Cobra flags, version cmd)
 - [ ] 01-04-PLAN.md — Exec Command (SQL execution, JSON output)
-- [ ] 01-05-PLAN.md — Error Handling & Transactions (exit codes, rollback)
+- [ ] 01-05-PLAN.md — Error Handling, Transactions, Import Command (exit codes, rollback, D-14)
 
 ---
 
