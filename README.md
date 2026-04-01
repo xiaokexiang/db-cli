@@ -4,7 +4,7 @@ A Node.js cross-platform database CLI tool for MySQL and Dameng (DM8).
 
 ## Features
 
-- **MySQL Support**: Full-featured MySQL database operations
+- **MySQL & Dameng Support**: Full-featured database operations for both databases
 - **Cross-platform**: Windows/macOS/Linux
 - **Simple Connection**: Single DSN URL format (`-c` flag)
 - **No Config Files**: Connection parameters specified at runtime
@@ -41,7 +41,7 @@ db-cli exec -c 'mysql://root:password@localhost:3306/mydb' 'SELECT * FROM users'
 
 **Parameters:**
 
-- `type`: `mysql` (Dameng support planned for future)
+- `type`: `mysql` or `dameng`
 - `user`: Username
 - `password`: Password (URL-encode special characters, e.g., `@` as `%40`)
 - `host`: Host address
@@ -56,6 +56,12 @@ db-cli exec -c 'mysql://root:123456@localhost:3306' 'SELECT 1'
 
 # MySQL - specific database
 db-cli exec -c 'mysql://root:123456@localhost:3306/mydb' 'SELECT 1'
+
+# Dameng - default schema (SYSDBA)
+db-cli exec -c 'dameng://SYSDBA:SYSDBA001@localhost:5236' 'SELECT 1 FROM DUAL'
+
+# Dameng - specific schema
+db-cli exec -c 'dameng://USER:password@localhost:5236/TEST' 'SELECT * FROM users'
 
 # Password with special characters (@ encoded as %40)
 db-cli exec -c 'mysql://root:p%40ssword@localhost:3306/mydb' 'SELECT 1'
@@ -210,12 +216,12 @@ Note: JSON files are imported into a table inferred from the filename (e.g., `da
 
 | Feature | MySQL | Dameng (DM8) |
 |---------|-------|--------------|
-| exec | ✅ | Planned |
-| desc | ✅ | Planned |
-| export | ✅ | Planned |
-| import | ✅ | Planned |
+| exec | ✅ | ✅ |
+| desc | ✅ | ✅ |
+| export | ✅ | ✅ |
+| import | ✅ | ✅ |
 
-Note: Dameng support is planned for a future release when a stable Node.js driver becomes available.
+Note: Dameng support requires the official dmdb driver. Install with `npm install dmdb`.
 
 ---
 

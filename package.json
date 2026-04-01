@@ -17,7 +17,12 @@
     "type": "git",
     "url": "git+https://github.com/xiaokexiang/db-cli.git"
   },
-  "keywords": ["database", "cli", "mysql", "dameng"],
+  "keywords": [
+    "database",
+    "cli",
+    "mysql",
+    "dameng"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {
@@ -33,6 +38,7 @@
   "dependencies": {
     "cli-table3": "^0.6.5",
     "commander": "^14.0.3",
+    "dmdb": "^1.0.48286",
     "mysql2": "^3.20.0"
   },
   "engines": {
