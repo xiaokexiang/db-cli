@@ -132,9 +132,9 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md — Dameng driver integration (CONN-03, DSN builder, GORM connection)
-- [ ] 04-02-PLAN.md — Skill MCP server foundation (project structure, binary path management)
-- [ ] 04-03-PLAN.md — Skill tools implementation (count, desc, export, import, exec with template matching)
-- [ ] 04-04-PLAN.md — Skill installer and GitHub Actions (auto-download from Releases, CI/CD)
+- [x] 04-02-PLAN.md — Skill MCP server foundation (project structure, binary path management)
+- [x] 04-03-PLAN.md — Skill tools implementation (count, desc, export, import, exec with template matching)
+- [x] 04-04-PLAN.md — Skill installer and GitHub Actions (auto-download from Releases, CI/CD)
 
 ---
 

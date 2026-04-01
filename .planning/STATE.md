@@ -8,7 +8,7 @@ progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 11
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # db-cli State
@@ -37,13 +37,13 @@ progress:
 ## Current Position
 
 Phase: 4
-Plan: 01 Complete
+Plan: 04 Complete
 | | |
 |---|---|
 | **Phase** | 4 — Dameng & Skill Integration |
-| **Plan** | 01 - Dameng Database Driver Integration |
-| **Status** | Plan 01 Complete (1/2 plans in Phase 4) |
-| **Progress** | ████████████████████████████████████████ 75% (3/4 phases) |
+| **Plan** | 04 - GitHub Releases & Installer |
+| **Status** | Plan 04 Complete (2/2 plans in Phase 4) |
+| **Progress** | ████████████████████████████████████████ 100% (4/4 phases) |
 
 ---
 
@@ -57,6 +57,7 @@ Plan: 01 Complete
 | Coverage | 100% |
 | Plan 01-05 | 15 min | 4 tasks | 3 files |
 | Plan 04-01 | ~30 min | 5 tasks | 4 files |
+| Plan 04-04 | ~45 min | 7 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -84,35 +85,18 @@ Plan: 01 Complete
 
 ## Session Continuity
 
-**Last Session:** Phase 4 Plan 01 complete - Dameng Database Driver Integration
+**Last Session:** Phase 4 Plan 04 complete - GitHub Releases & Installer
 
-**Next Action:** Phase 4 Plan 02: Skill MCP Server Foundation
-
-**Context to Carry:**
-- Dameng integration complete: `-t dameng` flag supported
-- Driver: github.com/godoes/gorm-dameng v0.7.2 (pure Go, no CGO)
-- DSN format: `dm://user:password@host:port?schema=database`
-- Default Dameng port: 5236
-- All tests pass, integration test skips gracefully without Dameng server
+**Next Action:** Phase 4 complete - all plans done
 
 **Context to Carry:**
-
-- Granularity: standard
-- Mode: yolo
-- Dependencies verified: Cobra v1.10.2, GORM v1.31.1, MySQL v1.9.3
-- Phase 1 complete: exec command with JSON/table/CSV output, error handling, transactions
-- Phase 2 complete: desc command (schema inspection), export command (data export)
-- New commands:
-  - `db-cli desc --table=xxx` - View table structure (JSON output)
-  - `db-cli desc --table=xxx --indexes` - View indexes
-  - `db-cli desc --table=xxx --foreign-keys` - View foreign keys
-  - `db-cli desc --databases` - List databases
-  - `db-cli desc --tables` - List tables
-  - `db-cli export --query="SELECT..." --output=file.sql` - Export query results
-  - `db-cli export --table=xxx --format=ddl` - Export table structure + data
-- New output formats: --format=table (ASCII), --format=csv (RFC 4180)
-- Schema helpers: GetTableColumns, GetIndexes, GetForeignKeys, ListDatabases, ListTables
-- Export helpers: ToInsert (INSERT statements), GetCreateTable (DDL)
+- Plan 04-04 complete: GitHub Releases installer implemented
+- 6 platform builds supported via GitHub Actions matrix
+- `npx db-cli-skill install` command downloads and installs db-cli binary
+- Binary location: `~/.db-cli/bin/db-cli` (Unix), `%APPDATA%\.db-cli\bin\db-cli.exe` (Windows)
+- Auto-detects platform (windows/darwin/linux x amd64/arm64)
+- @octokit/rest for GitHub API
+- Release workflow: `.github/workflows/release.yml` triggers on v* tags
 
 ---
 
@@ -128,4 +112,4 @@ Plan: 01 Complete
 
 ---
 
-*Last updated: 2026-04-01 - Phase 4 Plan 01 complete, Dameng driver integrated*
+*Last updated: 2026-04-01 - Phase 4 Plan 04 complete - GitHub Releases & Installer implemented, Phase 4 complete*
