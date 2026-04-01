@@ -9,20 +9,28 @@ interface DescOptions {
   foreignKeys: boolean;
   databases: boolean;
   tables: boolean;
-  connection: string;
 }
 
 export const descCmd = new Command('desc');
 
 descCmd
   .description('Describe database schema')
-  .option('-c, --connection <dsn>', 'Database connection URL', '')
+  .configureHelp({ showGlobalOptions: true })
   .option('-t, --table <name>', 'Table name to describe')
   .option('-i, --indexes', 'Show indexes for the table')
   .option('-k, --foreign-keys', 'Show foreign keys for the table')
   .option('-D, --databases', 'List all databases')
   .option('-B, --tables', 'List all tables in current database')
-  .action(async (options: DescOptions) => {
+  .hook('preAction', (thisCommand, actionCommand) => {
+    const parent = thisCommand.parent as Command;
+    if (!parent.opts().connection) {
+      console.error('Error: --connection (-c) is required. Example: -c "mysql://root:password@localhost:3306/mydb"');
+      process.exit(1);
+    }
+  })
+  .action(async (options: DescOptions, actionCommand: Command) => {
+    const parent = actionCommand.parent as Command;
+    const connection = parent.opts().connection;
     // Validate: at least one flag must be provided
     if (
       !options.databases &&
@@ -67,14 +75,9 @@ descCmd
       process.exit(1);
     }
 
-    if (!options.connection) {
-      console.error('Error: --connection is required');
-      process.exit(1);
-    }
-
     let config;
     try {
-      config = parseDSN(options.connection);
+      config = parseDSN(connection);
     } catch (error) {
       console.error(`Error: ${error}`);
       process.exit(1);

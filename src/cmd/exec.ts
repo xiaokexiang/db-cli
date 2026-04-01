@@ -6,18 +6,29 @@ import { scanRows, toTable, toJSON, toInsert, type QueryResult } from '../intern
 interface ExecOptions {
   format: 'table' | 'json' | 'sql';
   autocommit: boolean;
-  connection: string;
 }
 
 export const execCmd = new Command('exec');
 
 execCmd
   .description('Execute SQL statements')
+  .configureHelp({ showGlobalOptions: true })
   .argument('<sql>', 'SQL statement(s) to execute')
-  .option('-c, --connection <dsn>', 'Database connection URL', '')
   .option('--format <format>', 'Output format: table, json, sql', 'table')
   .option('--autocommit', 'Auto-commit each statement', true)
-  .action(async (sql: string, options: ExecOptions) => {
+  .hook('preAction', (thisCommand, actionCommand) => {
+    // Inherit global -c option
+    const parent = thisCommand.parent as Command;
+    if (!parent.opts().connection) {
+      console.error('Error: --connection (-c) is required. Example: -c "mysql://root:password@localhost:3306/mydb"');
+      process.exit(1);
+    }
+  })
+  .action(async (sql: string, options: ExecOptions, actionCommand: Command) => {
+    // Get connection from parent (global option)
+    const parent = actionCommand.parent as Command;
+    const connection = parent.opts().connection;
+
     if (!sql || sql.trim() === '') {
       console.error('Error: SQL statement cannot be empty');
       process.exit(1);
@@ -30,14 +41,9 @@ execCmd
       process.exit(1);
     }
 
-    if (!options.connection) {
-      console.error('Error: --connection is required');
-      process.exit(1);
-    }
-
     let config: ConnectionConfig;
     try {
-      config = ConnectionConfigFromOptions(options);
+      config = parseDSN(connection);
     } catch (error) {
       console.error(`Error: ${error}`);
       process.exit(1);
@@ -97,10 +103,6 @@ execCmd
       await db.close();
     }
   });
-
-function ConnectionConfigFromOptions(options: ExecOptions) {
-  return parseDSN(options.connection);
-}
 
 function parseSQLStatements(sql: string): string[] {
   return sql

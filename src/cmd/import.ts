@@ -7,17 +7,25 @@ import { parseDSN } from '../internal/database/config';
 interface ImportOptions {
   file: string;
   autocommit: boolean;
-  connection: string;
 }
 
 export const importCmd = new Command('import');
 
 importCmd
   .description('Import data from SQL or JSON file')
+  .configureHelp({ showGlobalOptions: true })
   .requiredOption('-f, --file <path>', 'Input file path (.sql or .json)')
-  .option('-c, --connection <dsn>', 'Database connection URL', '')
   .option('--autocommit', 'Auto-commit each statement', true)
-  .action(async (options: ImportOptions) => {
+  .hook('preAction', (thisCommand, actionCommand) => {
+    const parent = thisCommand.parent as Command;
+    if (!parent.opts().connection) {
+      console.error('Error: --connection (-c) is required. Example: -c "mysql://root:password@localhost:3306/mydb"');
+      process.exit(1);
+    }
+  })
+  .action(async (options: ImportOptions, actionCommand: Command) => {
+    const parent = actionCommand.parent as Command;
+    const connection = parent.opts().connection;
     const ext = path.extname(options.file).toLowerCase();
     if (ext !== '.sql' && ext !== '.json') {
       console.error(
@@ -26,14 +34,9 @@ importCmd
       process.exit(1);
     }
 
-    if (!options.connection) {
-      console.error('Error: --connection is required');
-      process.exit(1);
-    }
-
     let config;
     try {
-      config = parseDSN(options.connection);
+      config = parseDSN(connection);
     } catch (error) {
       console.error(`Error: ${error}`);
       process.exit(1);

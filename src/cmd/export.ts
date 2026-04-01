@@ -9,21 +9,29 @@ interface ExportOptions {
   query?: string;
   table?: string;
   output: string;
-  connection: string;
 }
 
 export const exportCmd = new Command('export');
 
 exportCmd
   .description('Export database data')
-  .option('-c, --connection <dsn>', 'Database connection URL', '')
+  .configureHelp({ showGlobalOptions: true })
   .option('-q, --query <sql>', 'SQL query to execute and export')
   .option('-t, --table <name>', 'Table name to export (structure + data)')
   .requiredOption(
     '-o, --output <path>',
     'Output file path (format auto-detected from extension: .sql or .json)'
   )
-  .action(async (options: ExportOptions) => {
+  .hook('preAction', (thisCommand, actionCommand) => {
+    const parent = thisCommand.parent as Command;
+    if (!parent.opts().connection) {
+      console.error('Error: --connection (-c) is required. Example: -c "mysql://root:password@localhost:3306/mydb"');
+      process.exit(1);
+    }
+  })
+  .action(async (options: ExportOptions, actionCommand: Command) => {
+    const parent = actionCommand.parent as Command;
+    const connection = parent.opts().connection;
     // Validate: either --query or --table must be provided, not both
     if (!options.query && !options.table) {
       console.error('Error: must specify either --query or --table');
@@ -43,14 +51,9 @@ exportCmd
       process.exit(1);
     }
 
-    if (!options.connection) {
-      console.error('Error: --connection is required');
-      process.exit(1);
-    }
-
     let config;
     try {
-      config = parseDSN(options.connection);
+      config = parseDSN(connection);
     } catch (error) {
       console.error(`Error: ${error}`);
       process.exit(1);
