@@ -36,15 +36,14 @@ func BuildDSN(cfg ConnectionConfig) (string, error) {
 		return "", fmt.Errorf("database is required")
 	}
 
-	// Default port to 3306 if not specified
-	port := cfg.Port
-	if port == 0 {
-		port = 3306
-	}
-
 	// Build DSN based on database type
 	switch cfg.DBType {
 	case "mysql", "":
+		// Default port to 3306 if not specified for MySQL
+		port := cfg.Port
+		if port == 0 {
+			port = 3306
+		}
 		// MySQL DSN format: user:pass@tcp(host:port)/database?params
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 			cfg.User,
@@ -55,8 +54,21 @@ func BuildDSN(cfg ConnectionConfig) (string, error) {
 		)
 		return dsn, nil
 	case "dameng":
-		// Dameng DSN format (to be implemented in Phase 4)
-		return "", fmt.Errorf("dameng database type not yet supported in Phase 1")
+		// Default port to 5236 if not specified for Dameng
+		port := cfg.Port
+		if port == 0 {
+			port = 5236
+		}
+		// Dameng DSN format: user:password@tcp(host:port)/database
+		// Driver: github.com/godoes/gorm-dameng (GORM DM8 driver)
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
+			cfg.User,
+			cfg.Password,
+			cfg.Host,
+			port,
+			cfg.Database,
+		)
+		return dsn, nil
 	default:
 		return "", fmt.Errorf("unsupported database type: %s", cfg.DBType)
 	}
