@@ -1,7 +1,7 @@
 # v1.1 Requirements
 
 **Milestone:** v1.1 CI/CD 自动化与跨仓库分发
-**Status:** Draft
+**Status:** Defined
 **Last updated:** 2026-04-01
 
 ---
@@ -63,11 +63,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CI/CD-01 | TBD | Not started |
-| CI/CD-02 | TBD | Not started |
-| CI/CD-03 | TBD | Not started |
-| SEC-01 | TBD | Not started |
-| SEC-02 | TBD | Not started |
+| CI/CD-01 | Phase 6 | Covered |
+| CI/CD-02 | Phase 6 | Covered |
+| CI/CD-03 | Phase 7 | Covered |
+| SEC-01 | Phase 7 | Covered |
+| SEC-02 | Phase 6 | Covered |
 
 ---
 
