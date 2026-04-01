@@ -191,3 +191,47 @@ jobs:
           asset_path: dist/db-cli-linux-arm64/db-cli-linux-arm64
           asset_name: db-cli-linux-arm64
           asset_content_type: application/octet-stream
+
+  deploy-to-db-skill:
+    name: Deploy to db-skill Repository
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: db-cli-*
+          path: ./binaries
+
+      - name: Checkout db-skill repository
+        uses: actions/checkout@v4
+        with:
+          repository: xiaokexiang/db-skill
+          token: ${{ secrets.CROSS_REPO_PAT }}
+          ref: main
+          path: ./db-skill
+
+      - name: Update binaries in db-skill
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          mkdir -p "db-skill/scripts/$VERSION"
+
+          # Copy all binaries to version directory
+          cp binaries/db-cli-* "db-skill/scripts/$VERSION/"
+
+          # Update latest copies
+          cp "db-skill/scripts/$VERSION/"* db-skill/scripts/
+
+          # Update VERSION manifest
+          echo "$VERSION" > db-skill/scripts/VERSION
+
+      - name: Commit and push to db-skill
+        run: |
+          cd db-skill
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add scripts/
+          git commit -m "chore: update db-cli binaries to ${GITHUB_REF#refs/tags/}"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.CROSS_REPO_PAT }}
