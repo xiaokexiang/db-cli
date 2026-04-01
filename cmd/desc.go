@@ -51,7 +51,7 @@ func init() {
 	descCmd.Flags().BoolVarP(&descIndexes, "indexes", "i", false, "Show indexes for the table")
 	descCmd.Flags().BoolVarP(&descForeignKeys, "foreign-keys", "k", false, "Show foreign keys for the table")
 	descCmd.Flags().BoolVarP(&descDatabases, "databases", "D", false, "List all databases")
-	descCmd.Flags().BoolVarP(&descTables, "tables", "T", false, "List all tables in current database")
+	descCmd.Flags().BoolVarP(&descTables, "tables", "B", false, "List all tables in current database")
 }
 
 // runDesc executes the desc command
@@ -63,10 +63,12 @@ func runDesc(cmd *cobra.Command, args []string) error {
 
 	// Validate required connection parameters
 	if cfg.User == "" {
-		return fmt.Errorf("user is required (use -u or --user)")
+		return fmt.Errorf("user is required")
 	}
-	if cfg.Database == "" && !descDatabases {
-		return fmt.Errorf("database is required (use -d or --database)")
+	// For Dameng, database is optional (defaults to username as schema)
+	// For MySQL desc --databases, database is also optional
+	if cfg.Database == "" && !descDatabases && cfg.DBType != "dameng" {
+		return fmt.Errorf("database is required")
 	}
 
 	// Validate flag combinations
@@ -92,9 +94,9 @@ func runDesc(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot specify both --indexes and --foreign-keys")
 	}
 
-	// Validate Dameng support (not yet supported in Phase 2)
-	if cfg.DBType == "dameng" {
-		return fmt.Errorf("dameng schema inspection not yet supported in Phase 2")
+	// Test database connection before opening
+	if err := database.TestConnection(cfg); err != nil {
+		return fmt.Errorf("database connection test failed: %w", err)
 	}
 
 	// Open database connection

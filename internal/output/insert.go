@@ -4,11 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // ToInsert converts query results to INSERT statements
 // Each row becomes an INSERT INTO table (cols) VALUES (vals) statement
 func ToInsert(rows *sql.Rows, tableName string) (string, error) {
+	return ToInsertForDB(rows, tableName, "mysql")
+}
+
+// ToInsertForDB converts query results to INSERT statements for a specific database type
+func ToInsertForDB(rows *sql.Rows, tableName string, dbType string) (string, error) {
 	if rows == nil {
 		return "", fmt.Errorf("rows cannot be nil")
 	}
@@ -56,13 +62,28 @@ func ToInsert(rows *sql.Rows, tableName string) (string, error) {
 		return "", nil
 	}
 
+	// Quote identifiers based on database type
+	// MySQL uses backticks (`), Dameng uses double quotes (")
+	quoteChar := "`"
+	if dbType == "dameng" {
+		quoteChar = `"`
+		tableName = strings.ToUpper(tableName)
+	}
+
 	// Build column list
-	builder.WriteString(fmt.Sprintf("INSERT INTO %s (", tableName))
+	builder.WriteString(fmt.Sprintf("INSERT INTO %s%s%s (", quoteChar, tableName, quoteChar))
 	for i, col := range columns {
 		if i > 0 {
 			builder.WriteString(", ")
 		}
-		builder.WriteString(col)
+		// Quote column names to handle expressions like SELECT 1
+		builder.WriteString(quoteChar)
+		if dbType == "dameng" {
+			builder.WriteString(strings.ToUpper(col))
+		} else {
+			builder.WriteString(col)
+		}
+		builder.WriteString(quoteChar)
 	}
 	builder.WriteString(") VALUES\n")
 
@@ -113,6 +134,9 @@ func formatSQLValue(val interface{}) string {
 		escaped := strings.ReplaceAll(string(v), "'", "''")
 		escaped = strings.ReplaceAll(escaped, "\\", "\\\\")
 		return fmt.Sprintf("'%s'", escaped)
+	case time.Time:
+		// Format time.Time as SQL timestamp
+		return fmt.Sprintf("'%s'", v.Format("2006-01-02 15:04:05"))
 	default:
 		// For other types (like time.Time), use string representation
 		s := fmt.Sprintf("%v", v)

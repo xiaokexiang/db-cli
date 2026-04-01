@@ -83,18 +83,6 @@ func TestDamengDSN_ValidationErrors(t *testing.T) {
 			},
 			expectedError: "user is required",
 		},
-		{
-			name: "missing database",
-			cfg: ConnectionConfig{
-				Host:     "localhost",
-				Port:     5236,
-				User:     "DBA",
-				Password: "SYSDBA",
-				Database: "",
-				DBType:   "dameng",
-			},
-			expectedError: "database is required",
-		},
 	}
 
 	for _, tc := range testCases {
@@ -107,6 +95,29 @@ func TestDamengDSN_ValidationErrors(t *testing.T) {
 				t.Errorf("expected error containing '%s', got: %v", tc.expectedError, err)
 			}
 		})
+	}
+}
+
+// TestDamengDSN_MissingDatabase tests that missing database uses username as default
+func TestDamengDSN_MissingDatabase(t *testing.T) {
+	cfg := ConnectionConfig{
+		Host:     "localhost",
+		Port:     5236,
+		User:     "DBA",
+		Password: "SYSDBA",
+		Database: "",
+		DBType:   "dameng",
+	}
+
+	dsn, err := BuildDSN(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// For Dameng, database should default to username
+	expected := "dm://DBA:SYSDBA@localhost:5236?schema=DBA"
+	if dsn != expected {
+		t.Errorf("expected DSN: %s, got: %s", expected, dsn)
 	}
 }
 

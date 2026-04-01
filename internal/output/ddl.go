@@ -17,6 +17,17 @@ func GetCreateTable(db *gorm.DB, tableName string) (string, error) {
 		return "", fmt.Errorf("table name is required")
 	}
 
+	// Detect database type
+	dbType := detectDBType(db)
+
+	if dbType == "dameng" {
+		return getCreateTableDameng(db, tableName)
+	}
+	return getCreateTableMySQL(db, tableName)
+}
+
+// getCreateTableMySQL generates CREATE TABLE for MySQL
+func getCreateTableMySQL(db *gorm.DB, tableName string) (string, error) {
 	// Get column information
 	columns, err := database.GetTableColumns(db, tableName)
 	if err != nil {
@@ -119,6 +130,99 @@ func GetCreateTable(db *gorm.DB, tableName string) (string, error) {
 	builder.WriteString(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;")
 
 	return builder.String(), nil
+}
+
+// getCreateTableDameng generates CREATE TABLE for Dameng
+func getCreateTableDameng(db *gorm.DB, tableName string) (string, error) {
+	// Get column information
+	columns, err := database.GetTableColumns(db, tableName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get table columns: %w", err)
+	}
+
+	if len(columns) == 0 {
+		return "", fmt.Errorf("table %s not found or has no columns", tableName)
+	}
+
+	// Get index information for PRIMARY KEY detection
+	indexes, err := database.GetIndexes(db, tableName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get indexes: %w", err)
+	}
+
+	// Build CREATE TABLE statement
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("CREATE TABLE \"%s\" (\n", strings.ToUpper(tableName)))
+
+	// Build column definitions
+	for i, col := range columns {
+		if i > 0 {
+			builder.WriteString(",\n")
+		}
+
+		fieldName, _ := col["Field"].(string)
+		colType, _ := col["Type"].(string)
+		isNullable, _ := col["Null"].(string)
+		defaultVal, hasDefault := col["Default"]
+
+		builder.WriteString(fmt.Sprintf("  \"%s\" %s", strings.ToUpper(fieldName), colType))
+
+		// Add NULL/NOT NULL
+		if isNullable == "NO" {
+			builder.WriteString(" NOT NULL")
+		}
+
+		// Add DEFAULT
+		if hasDefault && defaultVal != nil {
+			defaultStr := fmt.Sprintf("%v", defaultVal)
+			if defaultStr == "NULL" {
+				builder.WriteString(" DEFAULT NULL")
+			} else {
+				// Quote string defaults
+				if isStringType(colType) {
+					builder.WriteString(fmt.Sprintf(" DEFAULT '%s'", escapeString(defaultStr)))
+				} else {
+					builder.WriteString(fmt.Sprintf(" DEFAULT %s", defaultStr))
+				}
+			}
+		}
+	}
+
+	// Add PRIMARY KEY from index information
+	primaryKeys := detectPrimaryKeys(indexes)
+	if len(primaryKeys) > 0 {
+		builder.WriteString(",\n")
+		builder.WriteString("  PRIMARY KEY (")
+		for i, pk := range primaryKeys {
+			if i > 0 {
+				builder.WriteString(", ")
+			}
+			builder.WriteString(fmt.Sprintf("\"%s\"", strings.ToUpper(pk)))
+		}
+		builder.WriteString(")")
+	}
+
+	builder.WriteString("\n);")
+
+	return builder.String(), nil
+}
+
+// detectDBType detects the database type from the connection
+func detectDBType(db *gorm.DB) string {
+	if db == nil {
+		return "mysql"
+	}
+
+	// Check dialect name
+	dia := db.Dialector.Name()
+	if strings.Contains(strings.ToLower(dia), "dameng") ||
+	   strings.Contains(strings.ToLower(dia), "dm") {
+		return "dameng"
+	}
+
+	// Default to MySQL
+	return "mysql"
 }
 
 // detectPrimaryKeys extracts primary key column names from index information

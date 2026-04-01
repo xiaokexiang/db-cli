@@ -14,6 +14,7 @@ import (
 )
 
 var cfg database.ConnectionConfig
+var dsnURL string // DSN URL for -c flag
 
 // commandStart stores the start time of the current command
 var commandStart time.Time
@@ -28,6 +29,16 @@ Execute SQL statements, import/export data, and inspect database schemas.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Record command start time
 		commandStart = time.Now()
+
+		// Parse DSN URL if -c flag is provided
+		if dsnURL != "" {
+			parsedCfg, err := database.ParseDSN(dsnURL)
+			if err != nil {
+				return fmt.Errorf("failed to parse DSN: %w", err)
+			}
+			// Override cfg with parsed DSN values
+			cfg = parsedCfg
+		}
 
 		// Handle password=- (read from stdin)
 		if cfg.Password == "-" {
@@ -72,12 +83,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("help", "?", false, "Show help")
 
 	// Define persistent flags for connection parameters
-	rootCmd.PersistentFlags().StringVarP(&cfg.Host, "host", "h", "localhost", "Database host")
-	rootCmd.PersistentFlags().IntVarP(&cfg.Port, "port", "P", 0, "Database port (default: 3306 for mysql, 5236 for dameng)")
-	rootCmd.PersistentFlags().StringVarP(&cfg.User, "user", "u", "", "Database user (required)")
-	rootCmd.PersistentFlags().StringVarP(&cfg.Password, "password", "p", "", "Database password (use '-' to read from stdin)")
-	rootCmd.PersistentFlags().StringVarP(&cfg.Database, "database", "d", "", "Database name (required)")
-	rootCmd.PersistentFlags().StringVarP(&cfg.DBType, "type", "t", "mysql", "Database type (mysql, dameng)")
+	// Only -c flag for DSN URL - all connection info in one place
+	rootCmd.PersistentFlags().StringVarP(&dsnURL, "connection", "c", "", "Database connection URL (format: type://user:pass@host:port/db)")
 
 	// Note: Required flag validation (user, database) is handled by commands that need database connections
 	// Port defaults are handled in internal/database/connection.go (3306 for mysql, 5236 for dameng)

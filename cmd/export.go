@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -16,24 +18,35 @@ var (
 	exportQuery  string
 	exportTable  string
 	exportOutput string
-	exportFormat string
 )
+
+// detectDBTypeAndQuote detects database type and returns quote character
+func detectDBTypeAndQuote(db *gorm.DB) (string, string) {
+	dia := db.Dialector.Name()
+	if strings.Contains(strings.ToLower(dia), "dameng") || strings.Contains(strings.ToLower(dia), "dm") {
+		return "dameng", `"`
+	}
+	return "mysql", "`"
+}
 
 var exportCmd = &cobra.Command{
 	Use:   "export [flags]",
 	Short: "Export database data",
-	Long: `Export query results or entire tables to SQL files.
-Supports INSERT format for data export and DDL format for table structure.
+	Long: `Export query results or entire tables to a file.
+Format is auto-detected from output file extension: .sql (INSERT statements) or .json
 
 Examples:
-  # Export query results to INSERT statements
-  db-cli export -h localhost -u root -p password -d mydb --query="SELECT * FROM users" --output=users.sql --format=insert
+  # Export query results as SQL (INSERT statements)
+  db-cli export -c <dsn> -q "SELECT * FROM users" -o users.sql
 
-  # Export entire table with structure and data
-  db-cli export -h localhost -u root -p password -d mydb --table=users --output=users_dump.sql --format=ddl
+  # Export query results as JSON
+  db-cli export -c <dsn> -q "SELECT * FROM users" -o users.json
 
-  # Export only table structure (DDL)
-  db-cli export -h localhost -u root -p password -d mydb --table=users --output=users_schema.sql --format=ddl`,
+  # Export entire table with structure and data as SQL
+  db-cli export -c <dsn> -t users -o users_dump.sql
+
+  # Export entire table as JSON
+  db-cli export -c <dsn> -t users -o users.json`,
 	RunE: runExport,
 }
 
@@ -44,8 +57,10 @@ func init() {
 	// Define flags
 	exportCmd.Flags().StringVarP(&exportQuery, "query", "q", "", "SQL query to execute and export")
 	exportCmd.Flags().StringVarP(&exportTable, "table", "t", "", "Table name to export (structure + data)")
-	exportCmd.Flags().StringVarP(&exportOutput, "output", "o", "", "Output file path (required)")
-	exportCmd.Flags().StringVarP(&exportFormat, "format", "f", "insert", "Output format: insert or ddl")
+	exportCmd.Flags().StringVarP(&exportOutput, "output", "o", "", "Output file path (required, format auto-detected from extension: .sql or .json)")
+
+	// Mark output flag as required
+	exportCmd.MarkFlagRequired("output")
 }
 
 // runExport executes the export command
@@ -58,27 +73,23 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot specify both --query and --table")
 	}
 
-	// Validate --output is provided
+	// Validate output file extension
 	if exportOutput == "" {
 		return fmt.Errorf("--output is required")
 	}
-
-	// Validate --format is "insert" or "ddl"
-	if exportFormat != "insert" && exportFormat != "ddl" {
-		return fmt.Errorf("invalid format '%s': must be 'insert' or 'ddl'", exportFormat)
+	ext := strings.ToLower(filepath.Ext(exportOutput))
+	if ext != ".sql" && ext != ".json" {
+		return fmt.Errorf("unsupported output format '%s': use .sql or .json extension", ext)
 	}
 
 	// Validate required connection parameters
 	if cfg.User == "" {
-		return fmt.Errorf("user is required (use -u or --user)")
-	}
-	if cfg.Database == "" {
-		return fmt.Errorf("database is required (use -d or --database)")
+		return fmt.Errorf("user is required")
 	}
 
-	// Validate Dameng support (not yet supported in Phase 2)
-	if cfg.DBType == "dameng" {
-		return fmt.Errorf("dameng export not yet supported in Phase 2")
+	// Test database connection before opening
+	if err := database.TestConnection(cfg); err != nil {
+		return fmt.Errorf("database connection test failed: %w", err)
 	}
 
 	// Open database connection
@@ -92,24 +103,19 @@ func runExport(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
-	// Route based on flags
+	// Route based on flags and format
 	if exportQuery != "" {
-		return exportQueryResults(db, exportQuery, exportOutput, exportFormat)
+		return exportQueryResults(db, exportQuery, exportOutput, ext)
 	}
 	if exportTable != "" {
-		return exportTableData(db, exportTable, exportOutput, exportFormat)
+		return exportTableData(db, exportTable, exportOutput, ext)
 	}
 
 	return fmt.Errorf("no valid operation specified")
 }
 
 // exportQueryResults exports the results of a SQL query to a file
-func exportQueryResults(db *gorm.DB, query string, outputPath string, format string) error {
-	// For query export, only INSERT format makes sense
-	if format != "insert" {
-		return fmt.Errorf("--format=ddl is not supported with --query, use --format=insert")
-	}
-
+func exportQueryResults(db *gorm.DB, query string, outputPath string, ext string) error {
 	// Execute query
 	result := db.Raw(query)
 	if result.Error != nil {
@@ -123,41 +129,54 @@ func exportQueryResults(db *gorm.DB, query string, outputPath string, format str
 	}
 	defer rows.Close()
 
-	// Generate INSERT statements (use generic table name for query results)
-	insertSQL, err := output.ToInsert(rows, "query_result")
-	if err != nil {
-		return fmt.Errorf("failed to generate INSERT statements: %w", err)
-	}
-
-	if insertSQL == "" {
-		return fmt.Errorf("query returned no results")
+	var content string
+	switch ext {
+	case ".sql":
+		// Generate INSERT statements
+		dbType, _ := detectDBTypeAndQuote(db)
+		content, err = output.ToInsertForDB(rows, "query_result", dbType)
+		if err != nil {
+			return fmt.Errorf("failed to generate INSERT statements: %w", err)
+		}
+		if content == "" {
+			return fmt.Errorf("query returned no results")
+		}
+	case ".json":
+		// Scan rows to JSON
+		data, err := output.ScanRows(rows)
+		if err != nil {
+			return fmt.Errorf("failed to scan rows: %w", err)
+		}
+		jsonData, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal JSON: %w", err)
+		}
+		content = string(jsonData)
 	}
 
 	// Write to file
-	if err := writeExportFile(outputPath, insertSQL, "Query export"); err != nil {
+	if err := writeExportFile(outputPath, content, "Query export", ext); err != nil {
 		return err
 	}
-
 	fmt.Printf("Successfully exported query results to %s\n", outputPath)
+
 	return nil
 }
 
 // exportTableData exports an entire table's structure and/or data
-func exportTableData(db *gorm.DB, tableName string, outputPath string, format string) error {
-	var content strings.Builder
+func exportTableData(db *gorm.DB, tableName string, outputPath string, ext string) error {
+	var content string
 
-	// Add header comment
-	header := fmt.Sprintf("Table export: %s", tableName)
-
-	switch format {
-	case "ddl":
-		// Generate CREATE TABLE statement
+	switch ext {
+	case ".sql":
+		var builder strings.Builder
+		// Generate CREATE TABLE statement followed by INSERT statements
 		createSQL, err := output.GetCreateTable(db, tableName)
 		if err != nil {
 			return fmt.Errorf("failed to generate CREATE TABLE: %w", err)
 		}
-		content.WriteString(createSQL)
-		content.WriteString("\n\n")
+		builder.WriteString(createSQL)
+		builder.WriteString("\n\n")
 
 		// Also export data as INSERT statements
 		rows, err := db.Raw(fmt.Sprintf("SELECT * FROM %s", tableName)).Rows()
@@ -165,56 +184,65 @@ func exportTableData(db *gorm.DB, tableName string, outputPath string, format st
 			return fmt.Errorf("failed to query table data: %w", err)
 		}
 
-		insertSQL, err := output.ToInsert(rows, tableName)
+		dbType, _ := detectDBTypeAndQuote(db)
+		insertSQL, err := output.ToInsertForDB(rows, tableName, dbType)
 		rows.Close()
 		if err != nil {
 			return fmt.Errorf("failed to generate INSERT statements: %w", err)
 		}
 
 		if insertSQL != "" {
-			content.WriteString(insertSQL)
+			builder.WriteString(insertSQL)
 		}
+		content = builder.String()
 
-	case "insert":
-		// Export only data as INSERT statements
+	case ".json":
+		// Export data as JSON array
 		rows, err := db.Raw(fmt.Sprintf("SELECT * FROM %s", tableName)).Rows()
 		if err != nil {
 			return fmt.Errorf("failed to query table data: %w", err)
 		}
 		defer rows.Close()
 
-		insertSQL, err := output.ToInsert(rows, tableName)
+		data, err := output.ScanRows(rows)
 		if err != nil {
-			return fmt.Errorf("failed to generate INSERT statements: %w", err)
+			return fmt.Errorf("failed to scan rows: %w", err)
 		}
-
-		if insertSQL == "" {
-			return fmt.Errorf("table is empty")
+		jsonData, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal JSON: %w", err)
 		}
-
-		content.WriteString(insertSQL)
+		content = string(jsonData)
 	}
 
 	// Write to file
-	if err := writeExportFile(outputPath, content.String(), header); err != nil {
+	if err := writeExportFile(outputPath, content, "Table export", ext); err != nil {
 		return err
 	}
-
 	fmt.Printf("Successfully exported table '%s' to %s\n", tableName, outputPath)
+
 	return nil
 }
 
-// writeExportFile writes content to a file with a header comment
-func writeExportFile(path, content, header string) error {
-	// Build file content with header
-	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("-- %s\n", header))
-	builder.WriteString(fmt.Sprintf("-- Exported by db-cli on %s\n", time.Now().Format("2006-01-02 15:04:05")))
-	builder.WriteString("\n")
-	builder.WriteString(content)
+// writeExportFile writes content to a file with a header comment (for SQL only)
+func writeExportFile(path, content, header, ext string) error {
+	var finalContent string
+
+	if ext == ".sql" {
+		// Add SQL header comment
+		var builder strings.Builder
+		builder.WriteString(fmt.Sprintf("-- %s\n", header))
+		builder.WriteString(fmt.Sprintf("-- Exported by db-cli on %s\n", time.Now().Format("2006-01-02 15:04:05")))
+		builder.WriteString("\n")
+		builder.WriteString(content)
+		finalContent = builder.String()
+	} else {
+		// JSON doesn't need header
+		finalContent = content
+	}
 
 	// Write to file with 0644 permissions
-	if err := os.WriteFile(path, []byte(builder.String()), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(finalContent), 0644); err != nil {
 		return fmt.Errorf("failed to write output file: %w", err)
 	}
 

@@ -1,0 +1,41 @@
+{
+  "name": "db-cli",
+  "version": "2.0.0",
+  "description": "A cross-platform database CLI tool for MySQL and Dameng (DM8)",
+  "main": "dist/index.js",
+  "bin": {
+    "db-cli": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "rimraf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiaokexiang/db-cli.git"
+  },
+  "keywords": ["database", "cli", "mysql", "dameng"],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xiaokexiang/db-cli/issues"
+  },
+  "homepage": "https://github.com/xiaokexiang/db-cli#readme",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "rimraf": "^6.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "cli-table3": "^0.6.5",
+    "commander": "^14.0.3",
+    "mysql2": "^3.20.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

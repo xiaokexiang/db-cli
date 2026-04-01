@@ -24,14 +24,6 @@ func TestExecCommand_Exists(t *testing.T) {
 	}
 }
 
-// TestExecCommand_HasFileFlag verifies --file flag is defined
-func TestExecCommand_HasFileFlag(t *testing.T) {
-	fileFlag := execCmd.Flags().Lookup("file")
-	if fileFlag == nil {
-		t.Error("exec command should have --file flag")
-	}
-}
-
 // TestExecCommand_HasFormatFlag verifies --format flag is defined
 func TestExecCommand_HasFormatFlag(t *testing.T) {
 	formatFlag := execCmd.Flags().Lookup("format")
@@ -48,15 +40,15 @@ func TestExecCommand_HasAutocommitFlag(t *testing.T) {
 	}
 }
 
-// TestExecCommand_FormatDefaultIsJSON verifies default format is json
-func TestExecCommand_FormatDefaultIsJSON(t *testing.T) {
+// TestExecCommand_FormatDefaultIsTable verifies default format is table
+func TestExecCommand_FormatDefaultIsTable(t *testing.T) {
 	formatFlag := execCmd.Flags().Lookup("format")
 	if formatFlag == nil {
 		t.Fatal("format flag should exist")
 	}
 
 	defaultValue := formatFlag.DefValue
-	if defaultValue != "json" {
-		t.Errorf("expected default format to be 'json', got '%s'", defaultValue)
+	if defaultValue != "table" {
+		t.Errorf("expected default format to be 'table', got '%s'", defaultValue)
 	}
 }

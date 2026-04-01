@@ -13,68 +13,72 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	execFormat     string
+	execAutocommit bool
+)
+
 var execCmd = &cobra.Command{
 	Use:   "exec [flags] '<SQL>'",
 	Short: "Execute SQL statements",
 	Long: `Execute SQL statements against the database.
 
-Supports single SQL statements or SQL files.
-Query results are output as JSON by default.
+Supports single SQL statement or multiple statements separated by semicolons.
+Query results are output as table by default.
+
+Supported output formats:
+  - table: Output query results as ASCII table (default)
+  - json: Output query results as JSON
+  - sql: Generate INSERT statements from query results
 
 Examples:
   # Execute a single SQL statement
-  db-cli exec -h localhost -u root -p password -d mydb 'SELECT * FROM users'
+  db-cli exec -c <dsn> 'SELECT * FROM users'
 
-  # Execute SQL from a file
-  db-cli exec -h localhost -u root -p password -d mydb --file=script.sql
+  # Execute with table output
+  db-cli exec -c <dsn> --format=table 'SELECT * FROM users'
 
-  # Change output format
-  db-cli exec -h localhost -u root -p password -d mydb --format=table 'SELECT * FROM users'`,
-	Args: cobra.MaximumNArgs(1),
+  # Execute and generate INSERT statements
+  db-cli exec -c <dsn> --format=sql 'SELECT * FROM users'
+
+  # Execute multiple statements
+  db-cli exec -c <dsn> 'SELECT 1; SELECT 2; SELECT 3'
+
+  # Execute without autocommit (transaction mode)
+  db-cli exec -c <dsn> --autocommit=false 'INSERT INTO users VALUES (1, "test")'`,
+	Args: cobra.ExactArgs(1),
 	RunE: runExec,
 }
-
-var (
-	execFile       string
-	execFormat     string
-	execAutocommit bool
-)
 
 func init() {
 	// Add exec command to root
 	rootCmd.AddCommand(execCmd)
 
 	// Define flags
-	execCmd.Flags().StringVarP(&execFile, "file", "f", "", "SQL file to execute")
-	execCmd.Flags().StringVarP(&execFormat, "format", "", "json", "Output format: json, table, csv")
+	execCmd.Flags().StringVarP(&execFormat, "format", "", "table", "Output format: json, table, sql (for SELECT queries)")
 	execCmd.Flags().BoolVarP(&execAutocommit, "autocommit", "", true, "Auto-commit each SQL statement")
 }
 
 // runExec is the main execution logic for the exec command
 func runExec(cmd *cobra.Command, args []string) error {
-	// Validate: either SQL argument or --file flag must be provided, not both
-	hasSQL := len(args) > 0 && args[0] != ""
-	hasFile := execFile != ""
-
-	if hasSQL && hasFile {
-		return fmt.Errorf("cannot specify both SQL argument and --file flag")
-	}
-
-	if !hasSQL && !hasFile {
-		return fmt.Errorf("must specify either SQL argument or --file flag")
+	sql := args[0]
+	if sql == "" {
+		return fmt.Errorf("SQL statement cannot be empty")
 	}
 
 	// Validate format option
-	if execFormat != "json" && execFormat != "table" && execFormat != "csv" {
-		return fmt.Errorf("invalid format '%s': must be json, table, or csv", execFormat)
+	if execFormat != "json" && execFormat != "table" && execFormat != "sql" {
+		return fmt.Errorf("invalid format '%s': must be json, table, or sql", execFormat)
 	}
 
 	// Validate required connection parameters
 	if cfg.User == "" {
-		return fmt.Errorf("user is required (use -u or --user)")
+		return fmt.Errorf("user is required")
 	}
-	if cfg.Database == "" {
-		return fmt.Errorf("database is required (use -d or --database)")
+
+	// Test database connection before opening
+	if err := database.TestConnection(cfg); err != nil {
+		return fmt.Errorf("database connection test failed: %w", err)
 	}
 
 	// Open database connection
@@ -88,101 +92,21 @@ func runExec(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
-	if hasSQL {
-		// Execute single SQL statement
-		return executeSingleSQL(db, args[0], execFormat)
-	}
-
-	// Execute SQL file
-	return executeSQLFile(db, execFile, execFormat, execAutocommit)
-}
-
-// executeSingleSQL executes a single SQL statement and outputs the result
-func executeSingleSQL(db *gorm.DB, sql string, format string) error {
-	sql = strings.TrimSpace(sql)
-
-	// Check if it's a SELECT query (returns rows)
-	isSelect := isSelectQuery(sql)
-
-	if isSelect {
-		// Execute query and get rows
-		result := db.Raw(sql)
-		if result.Error != nil {
-			return NewExecutionError(
-				"failed to execute query",
-				1,
-				result.Error,
-			)
-		}
-
-		// Scan rows directly using output.ScanRows which accepts *sql.Rows
-		rows, err := result.Rows()
-		if err != nil {
-			return NewExecutionError(
-				"failed to get rows",
-				1,
-				err,
-			)
-		}
-		defer rows.Close()
-
-		// Format and output results
-		if formatErr := formatOutput(rows, format); formatErr != nil {
-			return NewExecutionError(
-				"failed to format output",
-				1,
-				formatErr,
-			)
-		}
-		return nil
-	} else {
-		// Execute non-SELECT statement (INSERT, UPDATE, DELETE, DDL, etc.)
-		result := db.Exec(sql)
-		if result.Error != nil {
-			return NewExecutionError(
-				"failed to execute statement",
-				1,
-				result.Error,
-			)
-		}
-
-		// Output rows affected
-		fmt.Printf("Query OK, %d row(s) affected\n", result.RowsAffected)
-		return nil
-	}
-}
-
-// executeSQLFile executes SQL statements from a file
-func executeSQLFile(db *gorm.DB, filePath string, format string, autocommit bool) error {
-	// Read file content
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return NewExecutionError(
-			"failed to read SQL file",
-			1,
-			err,
-		)
-	}
-
-	// Parse SQL statements with line number tracking
-	statements := parseSQLStatementsWithLines(string(content))
+	// Parse SQL statements
+	statements := parseSQLStatements(sql)
 
 	if len(statements) == 0 {
-		return NewExecutionError(
-			"no SQL statements found in file",
-			1,
-			nil,
-		)
+		return fmt.Errorf("no SQL statements found")
 	}
 
 	// Execute statements
 	var lastRows *gorm.DB
 	statementCount := 0
 
-	if autocommit {
+	if execAutocommit {
 		// Each statement runs in its own implicit transaction
 		for i, stmt := range statements {
-			stmtSQL := strings.TrimSpace(stmt.SQL)
+			stmtSQL := strings.TrimSpace(stmt)
 			if stmtSQL == "" {
 				continue
 			}
@@ -191,25 +115,13 @@ func executeSQLFile(db *gorm.DB, filePath string, format string, autocommit bool
 				// For SELECT, store last result for output
 				lastRows = db.Raw(stmtSQL)
 				if lastRows.Error != nil {
-					return NewExecutionErrorWithLine(
-						fmt.Sprintf("statement %d failed", i+1),
-						1,
-						lastRows.Error,
-						stmt.Line,
-						stmtSQL,
-					)
+					return fmt.Errorf("statement %d failed: %w", i+1, lastRows.Error)
 				}
 			} else {
 				// Non-SELECT: just execute
 				result := db.Exec(stmtSQL)
 				if result.Error != nil {
-					return NewExecutionErrorWithLine(
-						fmt.Sprintf("statement %d failed", i+1),
-						1,
-						result.Error,
-						stmt.Line,
-						stmtSQL,
-					)
+					return fmt.Errorf("statement %d failed: %w", i+1, result.Error)
 				}
 				statementCount++
 			}
@@ -218,16 +130,12 @@ func executeSQLFile(db *gorm.DB, filePath string, format string, autocommit bool
 		// Wrap ALL statements in a single transaction
 		tx := db.Begin()
 		if tx.Error != nil {
-			return NewExecutionError(
-				"failed to begin transaction",
-				1,
-				tx.Error,
-			)
+			return fmt.Errorf("failed to begin transaction: %w", tx.Error)
 		}
 
 		// Execute all statements within the transaction
 		for i, stmt := range statements {
-			stmtSQL := strings.TrimSpace(stmt.SQL)
+			stmtSQL := strings.TrimSpace(stmt)
 			if stmtSQL == "" {
 				continue
 			}
@@ -236,25 +144,13 @@ func executeSQLFile(db *gorm.DB, filePath string, format string, autocommit bool
 				lastRows = tx.Raw(stmtSQL)
 				if lastRows.Error != nil {
 					tx.Rollback()
-					return NewExecutionErrorWithLine(
-						fmt.Sprintf("statement %d failed", i+1),
-						1,
-						lastRows.Error,
-						stmt.Line,
-						stmtSQL,
-					)
+					return fmt.Errorf("statement %d failed: %w", i+1, lastRows.Error)
 				}
 			} else {
 				result := tx.Exec(stmtSQL)
 				if result.Error != nil {
 					tx.Rollback()
-					return NewExecutionErrorWithLine(
-						fmt.Sprintf("statement %d failed", i+1),
-						1,
-						result.Error,
-						stmt.Line,
-						stmtSQL,
-					)
+					return fmt.Errorf("statement %d failed: %w", i+1, result.Error)
 				}
 				statementCount++
 			}
@@ -262,11 +158,7 @@ func executeSQLFile(db *gorm.DB, filePath string, format string, autocommit bool
 
 		// Commit transaction only if all statements succeed
 		if commitErr := tx.Commit().Error; commitErr != nil {
-			return NewExecutionError(
-				"failed to commit transaction",
-				1,
-				commitErr,
-			)
+			return fmt.Errorf("failed to commit transaction: %w", commitErr)
 		}
 	}
 
@@ -275,89 +167,22 @@ func executeSQLFile(db *gorm.DB, filePath string, format string, autocommit bool
 		rows, err := lastRows.Rows()
 		if err == nil {
 			defer rows.Close()
-			if formatErr := formatOutput(rows, format); formatErr != nil {
-				return NewExecutionError(
-					"failed to format output",
-					1,
-					formatErr,
-				)
+			if err := formatOutput(rows, execFormat, db); err != nil {
+				return fmt.Errorf("failed to format output: %w", err)
 			}
 		}
 	}
 
-	fmt.Printf("Successfully executed %d statement(s)\n", statementCount)
+	if statementCount > 0 {
+		fmt.Printf("Successfully executed %d statement(s)\n", statementCount)
+	}
+
 	return nil
 }
 
-// StatementWithLine holds a SQL statement with its starting line number
-type StatementWithLine struct {
-	SQL  string
-	Line int
-}
-
-// parseSQLStatementsWithLines splits SQL content into individual statements with line numbers
-func parseSQLStatementsWithLines(content string) []StatementWithLine {
-	lines := strings.Split(content, "\n")
-	var statements []StatementWithLine
-	var currentStmt strings.Builder
-	startLine := 1
-	currentLine := 1
-
-	for _, line := range lines {
-		trimmedLine := strings.TrimSpace(line)
-
-		// Track the start line of the current statement
-		if currentStmt.Len() == 0 && trimmedLine != "" {
-			startLine = currentLine
-		}
-
-		// Check if this line contains a semicolon (statement delimiter)
-		if strings.Contains(line, ";") {
-			// Add content before semicolon
-			parts := strings.SplitN(line, ";", 2)
-			currentStmt.WriteString(parts[0])
-
-			stmt := strings.TrimSpace(currentStmt.String())
-			if stmt != "" {
-				statements = append(statements, StatementWithLine{
-					SQL:  stmt,
-					Line: startLine,
-				})
-			}
-
-			// Reset for next statement
-			currentStmt.Reset()
-			if len(parts) > 1 && strings.TrimSpace(parts[1]) != "" {
-				currentStmt.WriteString(parts[1])
-				startLine = currentLine
-			}
-		} else {
-			// No semicolon, continue building the statement
-			if currentStmt.Len() > 0 {
-				currentStmt.WriteString("\n")
-			}
-			currentStmt.WriteString(line)
-		}
-
-		currentLine++
-	}
-
-	// Handle any remaining statement without trailing semicolon
-	stmt := strings.TrimSpace(currentStmt.String())
-	if stmt != "" {
-		statements = append(statements, StatementWithLine{
-			SQL:  stmt,
-			Line: startLine,
-		})
-	}
-
-	return statements
-}
-
-// parseSQLStatements splits SQL content into individual statements (legacy, for backward compatibility)
+// parseSQLStatements splits SQL content into individual statements
 func parseSQLStatements(content string) []string {
-	// Simple split by semicolon
-	// TODO: Handle semicolons inside strings properly
+	// Split by semicolon
 	statements := strings.Split(content, ";")
 	result := make([]string, 0, len(statements))
 	for _, stmt := range statements {
@@ -376,14 +201,14 @@ func isSelectQuery(sql string) bool {
 }
 
 // formatOutput formats and prints query results
-func formatOutput(rows *sql.Rows, format string) error {
+func formatOutput(rows *sql.Rows, format string, db *gorm.DB) error {
 	switch format {
 	case "json":
 		return outputJSON(rows)
 	case "table":
 		return outputTable(rows)
-	case "csv":
-		return outputCSV(rows)
+	case "sql":
+		return outputSQL(rows, db)
 	default:
 		return outputJSON(rows)
 	}
@@ -415,12 +240,27 @@ func outputTable(rows *sql.Rows) error {
 	return nil
 }
 
-// outputCSV outputs query results as CSV
-func outputCSV(rows *sql.Rows) error {
-	result, err := output.ToCSV(rows, ',')
-	if err != nil {
-		return fmt.Errorf("failed to format CSV: %w", err)
+// outputSQL outputs query results as INSERT statements
+func outputSQL(rows *sql.Rows, db *gorm.DB) error {
+	// Detect database type
+	dbType := "mysql"
+	if db != nil {
+		dia := db.Dialector.Name()
+		if strings.Contains(strings.ToLower(dia), "dameng") || strings.Contains(strings.ToLower(dia), "dm") {
+			dbType = "dameng"
+		}
 	}
-	fmt.Print(result)
+
+	data, err := output.ToInsertForDB(rows, "query_result", dbType)
+	if err != nil {
+		return fmt.Errorf("failed to generate INSERT statements: %w", err)
+	}
+
+	if data == "" {
+		fmt.Println("-- Query returned no results")
+		return nil
+	}
+
+	fmt.Println(data)
 	return nil
 }
