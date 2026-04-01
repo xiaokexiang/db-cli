@@ -9,7 +9,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-5 (shipped 2026-04-01) — [Archive](.planning/milestones/v1.0-ROADMAP.md)
-- 🔄 **v1.1 CI/CD 自动化** — Phases 6-7 (planning)
+- 🔄 **v1.1 CI/CD 自动化** — Phase 6 complete, Phase 7 planning
 
 ---
 
@@ -40,15 +40,15 @@
 3. 所有二进制文件作为 release assets 上传成功
 4. Release 描述包含自动生成的 changelog
 
-**Plans:** 1 plan
+**Plans:** 1 plan (COMPLETE)
 
 Plans:
-- [ ] 06-01-PLAN.md — 优化 release.yml workflow 配置（权限精简、job 依赖修复、changelog 生成健壮）
+- [x] 06-01-PLAN.md — 优化 release.yml workflow 配置（权限精简、job 依赖修复、changelog 生成健壮）
 
 **Wave Structure:**
-- Wave 1: 06-01 (自主执行，含 checkpoint 验证)
+- Wave 1: 06-01 (COMPLETE)
 
-**Next:** 执行 `/gsd:execute-phase 06` 实施 workflow 优化
+**Result:** Phase 6 COMPLETE - release.yml refactored to 2-job architecture with proper build/release separation
 
 ---
 
@@ -80,13 +80,13 @@ Plans:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CI/CD-01 | Phase 6 | Covered |
-| CI/CD-02 | Phase 6 | Covered |
+| CI/CD-01 | Phase 6 | Complete |
+| CI/CD-02 | Phase 6 | Complete |
 | CI/CD-03 | Phase 7 | Covered |
 | SEC-01 | Phase 7 | Covered |
-| SEC-02 | Phase 6 | Covered |
+| SEC-02 | Phase 6 | Complete |
 
-**Coverage:** 5/5 (100%)
+**Coverage:** 3/5 Phase 6 requirements complete (60%)
 
 ---
 
@@ -118,7 +118,7 @@ Run `/gsd:new-milestone` to start next milestone cycle with:
 | Milestone | Phases | Status | Shipped |
 |-----------|--------|--------|---------|
 | v1.0 MVP | 1-5 | ✅ Complete | 2026-04-01 |
-| v1.1 CI/CD | 6-7 | 🔄 Planning | — |
+| v1.1 CI/CD | 6-7 | 1/2 Complete | Phase 6 shipped |
 
 **v1.0 Delivery:**
 - 22/22 requirements (100%)
