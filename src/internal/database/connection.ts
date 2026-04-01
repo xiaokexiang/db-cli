@@ -67,6 +67,7 @@ export class DatabaseConnection {
         connectString,
         user: this.config.user,
         password: this.config.password,
+        loginEncrypt: false, // Disable encryption for compatibility
       });
 
       // Test connection with simple query
@@ -189,6 +190,7 @@ export class DatabaseConnection {
     }
 
     // Dameng system views for column information
+    // Note: Dameng requires double quotes for identifiers, not single quotes
     const sql = `
       SELECT
         COLUMN_NAME as name,
@@ -197,16 +199,16 @@ export class DatabaseConnection {
         DATA_PRECISION as numericPrecision,
         DATA_SCALE as numericScale,
         NULLABLE as isNullable,
-        '' as columnKey,
+        '' as "columnKey",
         DATA_DEFAULT as columnDefault,
-        '' as extra,
-        '' as comment
+        '' as "extra",
+        '' as "comment"
       FROM USER_TAB_COLUMNS
       WHERE TABLE_NAME = ?
       ORDER BY COLUMN_ID
     `;
 
-    const result = await this.damengConnection.execute(sql, [tableName.toUpperCase()]);
+    const result = await this.damengConnection.execute(sql, [tableName.toUpperCase()], { outFormat: dmdb.OUT_FORMAT_OBJECT });
     return result.rows as ColumnSchema[];
   }
 
@@ -257,7 +259,7 @@ export class DatabaseConnection {
       ORDER BY c.INDEX_NAME, c.COLUMN_POSITION
     `;
 
-    const result = await this.damengConnection.execute(sql, [tableName.toUpperCase()]);
+    const result = await this.damengConnection.execute(sql, [tableName.toUpperCase()], { outFormat: dmdb.OUT_FORMAT_OBJECT });
     return result.rows as IndexSchema[];
   }
 
@@ -321,7 +323,7 @@ export class DatabaseConnection {
         AND c.TABLE_NAME = ?
     `;
 
-    const result = await this.damengConnection.execute(sql, [tableName.toUpperCase()]);
+    const result = await this.damengConnection.execute(sql, [tableName.toUpperCase()], { outFormat: dmdb.OUT_FORMAT_OBJECT });
     return result.rows as ForeignKeySchema[];
   }
 
@@ -360,7 +362,8 @@ export class DatabaseConnection {
     }
 
     const sql = `SELECT TABLE_NAME FROM USER_TABLES ORDER BY TABLE_NAME`;
-    const result = await this.damengConnection.execute(sql);
+    // dmdb returns results as array by default, need to set outFormat to object
+    const result = await this.damengConnection.execute(sql, [], { outFormat: dmdb.OUT_FORMAT_OBJECT });
     return (result.rows as Record<string, unknown>[]).map((row) =>
       (row as Record<string, unknown>).TABLE_NAME as string
     );
@@ -399,7 +402,7 @@ export class DatabaseConnection {
     }
 
     const sql = `SELECT USERNAME FROM DBA_USERS ORDER BY USERNAME`;
-    const result = await this.damengConnection.execute(sql);
+    const result = await this.damengConnection.execute(sql, [], { outFormat: dmdb.OUT_FORMAT_OBJECT });
     return (result.rows as Record<string, unknown>[]).map((row) =>
       (row as Record<string, unknown>).USERNAME as string
     );

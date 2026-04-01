@@ -76,23 +76,26 @@ db-cli exec -c 'mysql://root:p%40ssword@localhost:3306/mydb' 'SELECT 1'
 Execute SQL statements
 
 ```bash
-# Single SQL statement
-db-cli exec -c 'mysql://root:123456@localhost:3306/mydb' 'SELECT * FROM users'
+# MySQL - Single SQL statement
+db-cli exec -c 'mysql://root:password@localhost:3306/mydb' 'SELECT * FROM users'
 
-# Multiple statements (semicolon-separated)
-db-cli exec -c 'mysql://root:123456@localhost:3306/mydb' 'SELECT 1; SELECT 2; SELECT 3'
+# MySQL - Multiple statements (semicolon-separated)
+db-cli exec -c 'mysql://root:password@localhost:3306/mydb' 'SELECT 1; SELECT 2; SELECT 3'
+
+# Dameng - Single SQL statement
+db-cli exec -c 'dameng://SYSDBA:password@localhost:5236' 'SELECT * FROM users FROM DUAL'
 
 # Table output (default)
-db-cli exec -c 'mysql://root:123456@localhost:3306/mydb' 'SELECT * FROM users'
+db-cli exec -c 'mysql://root:password@localhost:3306/mydb' 'SELECT * FROM users'
 
 # JSON output
-db-cli exec -c 'mysql://root:123456@localhost:3306/mydb' --format=json 'SELECT * FROM users'
+db-cli exec -c 'mysql://root:password@localhost:3306/mydb' --format=json 'SELECT * FROM users'
 
 # Generate INSERT statements
-db-cli exec -c 'mysql://root:123456@localhost:3306/mydb' --format=sql 'SELECT * FROM users'
+db-cli exec -c 'mysql://root:password@localhost:3306/mydb' --format=sql 'SELECT * FROM users'
 
 # Transaction mode (all or nothing)
-db-cli exec -c 'mysql://root:123456@localhost:3306/mydb' --autocommit=false 'UPDATE users SET age=20; UPDATE users SET status=1'
+db-cli exec -c 'mysql://root:password@localhost:3306/mydb' --autocommit=false 'UPDATE users SET age=20; UPDATE users SET status=1'
 ```
 
 **Flags:**
@@ -109,20 +112,29 @@ db-cli exec -c 'mysql://root:123456@localhost:3306/mydb' --autocommit=false 'UPD
 Describe database schema
 
 ```bash
-# List all databases
-db-cli desc --databases -c 'mysql://root:123456@localhost:3306/mysql'
+# MySQL - List all databases
+db-cli desc --databases -c 'mysql://root:password@localhost:3306/mysql'
 
-# List all tables
-db-cli desc --tables -c 'mysql://root:123456@localhost:3306/mydb'
+# MySQL - List all tables
+db-cli desc --tables -c 'mysql://root:password@localhost:3306/mydb'
 
-# View table structure
-db-cli desc -t users -c 'mysql://root:123456@localhost:3306/mydb'
+# MySQL - View table structure
+db-cli desc -t users -c 'mysql://root:password@localhost:3306/mydb'
 
-# View indexes
-db-cli desc -t users --indexes -c 'mysql://root:123456@localhost:3306/mydb'
+# MySQL - View indexes
+db-cli desc -t users --indexes -c 'mysql://root:password@localhost:3306/mydb'
 
-# View foreign keys
-db-cli desc -t users --foreign-keys -c 'mysql://root:123456@localhost:3306/mydb'
+# MySQL - View foreign keys
+db-cli desc -t users --foreign-keys -c 'mysql://root:password@localhost:3306/mydb'
+
+# Dameng - List all schemas
+db-cli desc --databases -c 'dameng://SYSDBA:password@localhost:5236'
+
+# Dameng - List all tables
+db-cli desc --tables -c 'dameng://SYSDBA:password@localhost:5236'
+
+# Dameng - View table structure
+db-cli desc -t USERS -c 'dameng://SYSDBA:password@localhost:5236'
 ```
 
 **Flags:**
@@ -142,24 +154,29 @@ db-cli desc -t users --foreign-keys -c 'mysql://root:123456@localhost:3306/mydb'
 Export database data to file
 
 ```bash
-# Export query results as SQL (INSERT statements)
-db-cli export -c 'mysql://root:123456@localhost:3306/mydb' \
+# MySQL - Export query results as SQL (INSERT statements)
+db-cli export -c 'mysql://root:password@localhost:3306/mydb' \
   -q "SELECT * FROM users" \
   -o users.sql
 
-# Export query results as JSON
-db-cli export -c 'mysql://root:123456@localhost:3306/mydb' \
+# MySQL - Export query results as JSON
+db-cli export -c 'mysql://root:password@localhost:3306/mydb' \
   -q "SELECT * FROM users" \
   -o users.json
 
-# Export entire table (DDL + data)
-db-cli export -c 'mysql://root:123456@localhost:3306/mydb' \
+# MySQL - Export entire table (DDL + data)
+db-cli export -c 'mysql://root:password@localhost:3306/mydb' \
   -t users \
   -o users_dump.sql
 
-# Export entire table as JSON
-db-cli export -c 'mysql://root:123456@localhost:3306/mydb' \
+# MySQL - Export entire table as JSON
+db-cli export -c 'mysql://root:password@localhost:3306/mydb' \
   -t users \
+  -o users.json
+
+# Dameng - Export query results as JSON
+db-cli export -c 'dameng://SYSDBA:password@localhost:5236' \
+  -q "SELECT * FROM USERS" \
   -o users.json
 ```
 
@@ -180,14 +197,20 @@ Supported formats: `.sql` (CREATE + INSERT), `.json`
 Import SQL or JSON files
 
 ```bash
-# Import SQL file
-db-cli import -c 'mysql://root:123456@localhost:3306/mydb' -f script.sql
+# MySQL - Import SQL file
+db-cli import -c 'mysql://root:password@localhost:3306/mydb' -f script.sql
 
-# Import JSON file (generates INSERT statements)
-db-cli import -c 'mysql://root:123456@localhost:3306/mydb' -f data.json
+# MySQL - Import JSON file (generates INSERT statements)
+db-cli import -c 'mysql://root:password@localhost:3306/mydb' -f data.json
+
+# Dameng - Import SQL file
+db-cli import -c 'dameng://SYSDBA:password@localhost:5236' -f script.sql
+
+# Dameng - Import JSON file (generates INSERT statements)
+db-cli import -c 'dameng://SYSDBA:password@localhost:5236' -f data.json
 
 # Transaction mode import
-db-cli import -c 'mysql://root:123456@localhost:3306/mydb' -f data.sql --autocommit=false
+db-cli import -c 'mysql://root:password@localhost:3306/mydb' -f data.sql --autocommit=false
 ```
 
 **Flags:**
@@ -240,6 +263,24 @@ npm run dev -- exec -c 'mysql://...' 'SELECT 1'
 # Run compiled version
 npm start -- exec -c 'mysql://...' 'SELECT 1'
 ```
+
+---
+
+## Notes
+
+### Dameng Database
+
+- **Connection**: Uses official dmdb driver
+- **Default Port**: 5236
+- **Default Schema**: Username (e.g., SYSDBA)
+- **Encryption**: Login encryption is disabled by default for compatibility
+- **SQL Syntax**: Use `FROM DUAL` for queries without actual tables
+- **Case Sensitivity**: Table names are uppercase by default
+
+### MySQL
+
+- **Default Port**: 3306
+- **Default Database**: mysql
 
 ---
 
