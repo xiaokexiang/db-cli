@@ -14,7 +14,7 @@ A Node.js cross-platform database CLI tool for MySQL and Dameng (DM8).
 
 ```bash
 # Install from npm (recommended)
-npm install -g db-cli
+npm install @xiaokexiang/db-cli
 
 # Or build from source
 npm install
