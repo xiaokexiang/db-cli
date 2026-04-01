@@ -15,14 +15,14 @@ export const exportCmd = new Command('export');
 
 exportCmd
   .description('Export database data')
-  .configureHelp({ showGlobalOptions: true })
+  .configureHelp({ showGlobalOptions: false })
   .option('-q, --query <sql>', 'SQL query to execute and export')
   .option('-t, --table <name>', 'Table name to export (structure + data)')
   .requiredOption(
     '-o, --output <path>',
     'Output file path (format auto-detected from extension: .sql or .json)'
   )
-  .hook('preAction', (thisCommand, actionCommand) => {
+  .hook('preAction', (thisCommand) => {
     const parent = thisCommand.parent as Command;
     if (!parent.opts().connection) {
       console.error('Error: --connection (-c) is required. Example: -c "mysql://root:password@localhost:3306/mydb"');

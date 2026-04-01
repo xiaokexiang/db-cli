@@ -12,12 +12,11 @@ export const execCmd = new Command('exec');
 
 execCmd
   .description('Execute SQL statements')
-  .configureHelp({ showGlobalOptions: true })
+  .configureHelp({ showGlobalOptions: false })
   .argument('<sql>', 'SQL statement(s) to execute')
   .option('--format <format>', 'Output format: table, json, sql', 'table')
   .option('--autocommit', 'Auto-commit each statement', true)
-  .hook('preAction', (thisCommand, actionCommand) => {
-    // Inherit global -c option
+  .hook('preAction', (thisCommand) => {
     const parent = thisCommand.parent as Command;
     if (!parent.opts().connection) {
       console.error('Error: --connection (-c) is required. Example: -c "mysql://root:password@localhost:3306/mydb"');
@@ -25,7 +24,6 @@ execCmd
     }
   })
   .action(async (sql: string, options: ExecOptions, actionCommand: Command) => {
-    // Get connection from parent (global option)
     const parent = actionCommand.parent as Command;
     const connection = parent.opts().connection;
 

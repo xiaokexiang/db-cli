@@ -23,7 +23,6 @@ program
     "-c, --connection <dsn>",
     "Database connection URL (e.g., mysql://user:pass@host:port/db or dameng://user:pass@host:port/db)"
   )
-  .configureHelp({ showGlobalOptions: true })
   .addCommand(execCmd)
   .addCommand(descCmd)
   .addCommand(importCmd)

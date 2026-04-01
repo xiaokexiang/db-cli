@@ -13,10 +13,10 @@ export const importCmd = new Command('import');
 
 importCmd
   .description('Import data from SQL or JSON file')
-  .configureHelp({ showGlobalOptions: true })
+  .configureHelp({ showGlobalOptions: false })
   .requiredOption('-f, --file <path>', 'Input file path (.sql or .json)')
   .option('--autocommit', 'Auto-commit each statement', true)
-  .hook('preAction', (thisCommand, actionCommand) => {
+  .hook('preAction', (thisCommand) => {
     const parent = thisCommand.parent as Command;
     if (!parent.opts().connection) {
       console.error('Error: --connection (-c) is required. Example: -c "mysql://root:password@localhost:3306/mydb"');
