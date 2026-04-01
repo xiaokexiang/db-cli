@@ -12,7 +12,6 @@ export const execCmd = new Command('exec');
 
 execCmd
   .description('Execute SQL statements')
-  .argument('<sql>', 'SQL statement(s) to execute')
   .option('--format <format>', 'Output format: table, json, sql (default: "table")')
   .option('--autocommit', 'Auto-commit each statement (default: true)')
   .helpOption(false)
@@ -23,9 +22,24 @@ execCmd
       process.exit(1);
     }
   })
-  .action(async (sql: string, options: ExecOptions, actionCommand: Command) => {
+  .hook('postAction', (thisCommand) => {
+    // Get SQL from remaining arguments
+    const args = process.argv.slice(process.argv.indexOf('exec') + 1);
+    const sqlArgs = args.filter((arg) => !arg.startsWith('--') && arg !== '-h');
+    if (sqlArgs.length === 0) {
+      console.error('Error: SQL statement is required');
+      console.error('Usage: db-cli exec [options] <sql>');
+      process.exit(1);
+    }
+  })
+  .action(async (options: ExecOptions, actionCommand: Command) => {
     const parent = actionCommand.parent as Command;
     const connection = parent.opts().connection;
+
+    // Get SQL from remaining command line args
+    const args = process.argv.slice(process.argv.indexOf('exec') + 1);
+    const sqlArgs = args.filter((arg) => !arg.startsWith('--') && arg !== '-h');
+    const sql = sqlArgs.join(' ');
 
     if (!sql || sql.trim() === '') {
       console.error('Error: SQL statement cannot be empty');

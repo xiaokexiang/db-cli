@@ -19,17 +19,22 @@ const program = new Command();
 program
   .name("db-cli")
   .description("A cross-platform database CLI tool for MySQL and Dameng (DM8)")
+  .option('-c, --connection <dsn>', 'Database connection URL (e.g., mysql://user:pass@host:port/db or dameng://user:pass@host:port/db)')
   .action(() => {
     // Default action when no command is given
-    console.log('Usage: db-cli <command>');
+    console.log('Usage: db-cli [options] <command>');
     console.log('');
     console.log('A cross-platform database CLI tool for MySQL and Dameng (DM8)');
     console.log('');
+    console.log('Options:');
+    console.log('  -c, --connection    Database connection URL');
+    console.log('');
     console.log('Commands:');
-    console.log('  exec <sql>    Execute SQL statements');
-    console.log('  desc          Describe database schema');
-    console.log('  import        Import data from SQL or JSON file');
-    console.log('  export        Export database data');
+    console.log('  exec      Execute SQL statements');
+    console.log('  desc      Describe database schema');
+    console.log('  import    Import data from SQL or JSON file');
+    console.log('  export    Export database data');
+    console.log('');
   })
   .addCommand(execCmd)
   .addCommand(descCmd)
@@ -41,34 +46,36 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
   const cmdIndex = process.argv.findIndex((arg) => ['exec', 'desc', 'import', 'export'].includes(arg));
   if (cmdIndex === -1) {
     // Show main help
-    console.log('Usage: db-cli <command>');
+    console.log('Usage: db-cli [options] <command>');
     console.log('');
     console.log('A cross-platform database CLI tool for MySQL and Dameng (DM8)');
     console.log('');
+    console.log('Options:');
+    console.log('  -c, --connection    Database connection URL');
+    console.log('');
     console.log('Commands:');
-    console.log('  exec <sql>    Execute SQL statements');
-    console.log('  desc          Describe database schema');
-    console.log('  import        Import data from SQL or JSON file');
-    console.log('  export        Export database data');
+    console.log('  exec      Execute SQL statements');
+    console.log('  desc      Describe database schema');
+    console.log('  import    Import data from SQL or JSON file');
+    console.log('  export    Export database data');
+    console.log('');
     process.exit(0);
   } else {
     // Show subcommand help
     const cmd = process.argv[cmdIndex];
     if (cmd === 'exec') {
-      console.log('Usage: db-cli exec <sql>');
+      console.log('Usage: db-cli exec [options]');
       console.log('');
       console.log('Execute SQL statements');
-      console.log('');
-      console.log('Arguments:');
-      console.log('  sql               SQL statement(s) to execute');
       console.log('');
       console.log('Options:');
       console.log('  --format          Output format: table, json, sql (default: "table")');
       console.log('  --autocommit      Auto-commit each statement (default: true)');
       console.log('  -h, --help        display help for command');
+      console.log('');
       process.exit(0);
     } else if (cmd === 'desc') {
-      console.log('Usage: db-cli desc');
+      console.log('Usage: db-cli desc [options]');
       console.log('');
       console.log('Describe database schema');
       console.log('');
@@ -79,9 +86,10 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
       console.log('  -D, --databases     List all databases');
       console.log('  -B, --tables        List all tables in current database');
       console.log('  -h, --help          display help for command');
+      console.log('');
       process.exit(0);
     } else if (cmd === 'import') {
-      console.log('Usage: db-cli import');
+      console.log('Usage: db-cli import [options]');
       console.log('');
       console.log('Import data from SQL or JSON file');
       console.log('');
@@ -89,9 +97,10 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
       console.log('  -f, --file        Input file path (.sql or .json)');
       console.log('  --autocommit      Auto-commit each statement (default: true)');
       console.log('  -h, --help        display help for command');
+      console.log('');
       process.exit(0);
     } else if (cmd === 'export') {
-      console.log('Usage: db-cli export');
+      console.log('Usage: db-cli export [options]');
       console.log('');
       console.log('Export database data');
       console.log('');
@@ -100,6 +109,7 @@ if (process.argv.includes('--help') || process.argv.includes('-h')) {
       console.log('  -t, --table       Table name to export (structure + data)');
       console.log('  -o, --output      Output file path (format auto-detected from extension: .sql or .json)');
       console.log('  -h, --help        display help for command');
+      console.log('');
       process.exit(0);
     }
   }
