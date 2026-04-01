@@ -14,6 +14,7 @@
 
 - [x] **CONN-01**: 支持通过 flag 指定数据库连接参数 — Phase 1
 - [x] **CONN-02**: 支持 MySQL 数据库连接 — Phase 1
+- [x] **CONN-03**: 支持达梦数据库连接（使用 GORM + gorm-dameng）— Phase 4
 - [x] **EXEC-01**: exec 命令支持执行单条 SQL 语句 — Phase 1
 - [x] **EXEC-02**: exec 命令支持执行 SQL 文件 — Phase 1
 - [x] **EXEC-03**: SQL 文件执行遇到错误时立即停止 — Phase 1
@@ -26,15 +27,15 @@
 - [x] **IO-01**: export 命令支持按查询导出为 SQL INSERT 语句 — Phase 2
 - [x] **IO-02**: export 命令支持导出 DDL 语句 — Phase 2
 - [x] **IO-03**: import 命令导入 SQL 文件 — Phase 2 (import 作为 exec --file 的别名)
-- [x] **PLATFORM-01**: 支持 Windows/macOS/Linux 跨平台编译 — Phase 1
+- [x] **LOG-01**: 记录命令历史（不含密码等敏感信息）— Phase 3
+- [x] **LOG-02**: 记录错误日志 — Phase 3
+- [x] **SKILL-01**: Claude Code Skill 支持自然语言解析为 db-cli 命令 — Phase 4
+- [x] **SKILL-02**: Skill 安装时自动从 GitHub Releases 下载 db-cli — Phase 4
+- [x] **PLATFORM-01**: 支持 Windows/macOS/Linux 跨平台编译 — Phase 1/4
 
 ### Active
 
-- [ ] **CONN-03**: 支持达梦数据库连接（使用 GORM + dm-go-driver）— Phase 4
-- [ ] **LOG-01**: 记录命令历史（不含密码等敏感信息）— Phase 3
-- [ ] **LOG-02**: 记录错误日志 — Phase 3
-- [ ] **SKILL-01**: Claude Code Skill 支持自然语言解析为 db-cli 命令 — Phase 4
-- [ ] **SKILL-02**: Skill 安装时自动从 GitHub Releases 下载 db-cli — Phase 4
+(None - all v1 requirements complete)
 
 ### Out of Scope
 

@@ -81,12 +81,15 @@
 
 ### Skill Integration (SKILL)
 
-- [ ] **SKILL-01**: Claude Code Skill
+- [x] **SKILL-01**: Claude Code Skill
   - 解析自然语言为 db-cli 命令
+  - 5 个工具：count, desc, export, import, exec
+  - 模板匹配系统（D-09, D-10）
   - 示例：`db-cli count --host=10.50.13.41 --database=bocloud_upms --table=upms_core_account`
-- [ ] **SKILL-02**: 自动下载
+- [x] **SKILL-02**: 自动下载
   - Skill 安装时从 GitHub Releases 下载 db-cli 二进制
-  - 支持增量更新检查
+  - 支持 6 个平台：windows/amd64, windows/arm64, darwin/amd64, darwin/arm64, linux/amd64, linux/arm64
+  - `npx db-cli-skill install` 一键安装
 
 ### Platform (PLATFORM)
 
@@ -135,20 +138,20 @@
 | EXEC-03 | Phase 1 | Complete |
 | EXEC-04 | Phase 1 | Complete |
 | DQL-01 | Phase 1 | Complete |
-| DQL-02 | Phase 2 | Pending |
-| DESC-01 | Phase 2 | Pending |
-| DESC-02 | Phase 2 | Pending |
-| DESC-03 | Phase 2 | Pending |
-| DESC-04 | Phase 2 | Pending |
+| DQL-02 | Phase 2 | Complete |
+| DESC-01 | Phase 2 | Complete |
+| DESC-02 | Phase 2 | Complete |
+| DESC-03 | Phase 2 | Complete |
+| DESC-04 | Phase 2 | Complete |
 | IO-01 | Phase 1 | Complete |
-| IO-02 | Phase 2 | Pending |
-| IO-03 | Phase 2 | Pending |
-| LOG-01 | Phase 3 | Pending |
-| LOG-02 | Phase 3 | Pending |
-| SKILL-01 | Phase 4 | Pending |
-| SKILL-02 | Phase 4 | Pending |
+| IO-02 | Phase 2 | Complete |
+| IO-03 | Phase 2 | Complete |
+| LOG-01 | Phase 3 | Complete |
+| LOG-02 | Phase 3 | Complete |
+| SKILL-01 | Phase 4 | Complete |
+| SKILL-02 | Phase 4 | Complete |
 | PLATFORM-01 | Phase 1 | Complete |
-| PLATFORM-02 | Phase 1 | Complete |
+| PLATFORM-02 | Phase 4 | Complete |
 
 ---
 

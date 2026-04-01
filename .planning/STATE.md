@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-last_updated: "2026-04-01T08:55:00.000Z"
+status: complete
+last_updated: "2026-04-01T09:00:00.000Z"
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 11
-  completed_plans: 14
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # db-cli State
@@ -23,27 +23,35 @@ progress:
 
 **Core Value:** Let users complete database operations via natural language or simple commands without memorizing complex SQL syntax and connection parameters, while maintaining full control over the database.
 
-**Current Focus:** Phase 03 — Logging & Polish
+**Current Focus:** Phase 4 Complete - v1.0 Milestone Complete
 
 **Key Constraints:**
 
-- MySQL and Dameng databases must be supported (business requirement)
-- Cross-platform: Windows/macOS/Linux
-- No configuration storage: manual connection parameters each time (security)
-- GORM-first: unified database operations
+- MySQL and Dameng databases must be supported (business requirement) ✅
+- Cross-platform: Windows/macOS/Linux ✅
+- No configuration storage: manual connection parameters each time (security) ✅
+- GORM-first: unified database operations ✅
 
 ---
 
 ## Current Position
 
-Phase: 4
-Plan: 03 Complete
+**Phase 4 Complete** - All v1.0 requirements delivered
+
 | | |
 |---|---|
-| **Phase** | 4 — Dameng & Skill Integration |
-| **Plan** | 03 - Skill Tools Implementation |
-| **Status** | Plan 03 Complete (2/2 plans in Phase 4) |
-| **Progress** | ████████████████████████████████████████ 100% (4/4 phases) |
+| **Milestone** | v1.0 — Complete |
+| **Status** | 4/4 phases complete (100%) |
+| **Progress** | ████████████████████████████████████████ 100% |
+
+### Phase Summary
+
+| Phase | Name | Status | Key Deliverables |
+|-------|------|--------|------------------|
+| 1 | MySQL Core Execution | ✅ Complete | exec command, MySQL connection, JSON/table/CSV output |
+| 2 | Schema Inspection & Import/Export | ✅ Complete | desc command, export/import commands, multi-format support |
+| 3 | Logging & Polish | ✅ Complete | Command history, error logging |
+| 4 | Dameng & Skill Integration | ✅ Complete | Dameng support, MCP Skill server, GitHub Releases |
 
 ---
 
@@ -87,20 +95,38 @@ Plan: 03 Complete
 
 ## Session Continuity
 
-**Last Session:** Phase 4 Plan 03 complete - Skill Tools Implementation
+**Last Session:** Phase 4 complete - Dameng & Skill Integration
 
-**Next Action:** Phase 4 complete - all plans done
+**Next Action:** v1.0 milestone complete - all requirements delivered
 
 **Context to Carry:**
-- Plan 04-03 complete: Skill MCP server with 5 tools implemented
-- Tools: count, desc, export, import, exec - all delegate to db-cli binary
-- Template matching system for natural language parsing (D-09, D-10)
-- Templates in `src/templates/commands.ts` with 5 tool definitions
-- Matcher in `src/templates/matcher.ts` with confidence scoring
-- All tools use Zod schema validation
-- execa for spawning db-cli binary
-- MCP server registered with all 5 tools in `src/server/mcp-server.ts`
-- Template patterns handle variations like "show me the structure" vs "describe table"
+
+### Phase 4 Deliverables
+
+**Dameng Database Support (Plan 04-01):**
+- Driver: `github.com/godoes/gorm-dameng v0.7.2` (pure Go, no CGO)
+- DSN format: `dm://user:password@host:port?schema=database`
+- Default port: 5236
+- Usage: `db-cli exec -t dameng -h <host> -u <user> -p <pass> -d <db> 'SQL'`
+
+**Skill MCP Server (Plan 04-02, 04-03, 04-04):**
+- Independent TypeScript project: `db-cli-skill/`
+- 5 MCP tools: count, desc, export, import, exec
+- Template-based natural language parsing (D-09, D-10)
+- GitHub Releases integration for binary download
+- Installation: `npx db-cli-skill install`
+- CI/CD: `.github/workflows/release.yml` for 6 platforms
+
+### All v1 Requirements Complete
+
+- CONN-01/02/03: MySQL + Dameng connections ✅
+- EXEC-01/02/03/04: SQL execution ✅
+- DQL-01/02: Multi-format output ✅
+- DESC-01/02/03/04: Schema inspection ✅
+- IO-01/02/03: Import/export ✅
+- LOG-01/02: Logging ✅
+- SKILL-01/02: Claude Code Skill ✅
+- PLATFORM-01/02: Cross-platform builds ✅
 
 ---
 
