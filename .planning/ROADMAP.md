@@ -131,7 +131,7 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Dameng driver integration (CONN-03, DSN builder, GORM connection)
+- [x] 04-01-PLAN.md — Dameng driver integration (CONN-03, DSN builder, GORM connection)
 - [ ] 04-02-PLAN.md — Skill MCP server foundation (project structure, binary path management)
 - [ ] 04-03-PLAN.md — Skill tools implementation (count, desc, export, import, exec with template matching)
 - [ ] 04-04-PLAN.md — Skill installer and GitHub Actions (auto-download from Releases, CI/CD)
@@ -144,7 +144,7 @@ Plans:
 |-------------|-------|--------|
 | CONN-01 | Phase 1 | Pending |
 | CONN-02 | Phase 1 | Pending |
-| CONN-03 | Phase 4 | Pending |
+| CONN-03 | Phase 4 | Complete |
 | EXEC-01 | Phase 1 | Pending |
 | EXEC-02 | Phase 1 | Pending |
 | EXEC-03 | Phase 1 | Pending |
@@ -176,7 +176,7 @@ Plans:
 | 1. MySQL Core Execution | 5/5 | Complete | 01-01: Project Setup ✓, 01-02: Connection Layer ✓, 01-03: CLI Root Command ✓, 01-04: Exec Command ✓, 01-05: Error Handling, Transactions, Import ✓ |
 | 2. Schema Inspection & Import/Export | 3/3 | Complete | 02-01: Table/CSV Formatters ✓, 02-02: Desc Command ✓, 02-03: Export Command ✓ |
 | 3. Logging & Polish | 0/2 | Planned | - |
-| 4. Dameng & Skill Integration | 0/4 | Not started | - |
+| 4. Dameng & Skill Integration | 1/4 | In progress | 04-01: Dameng Driver Integration ✓ |
 
 ---
 

@@ -11,9 +11,11 @@
 - [x] **CONN-02**: MySQL 数据库连接
   - 使用 GORM + go-sql-driver/mysql v1.9.3
   - 支持 MySQL 5.7+ 和 8.x
-- [ ] **CONN-03**: 达梦数据库连接
-  - 使用 GORM + dm-go-driver（需验证可用性）
+- [x] **CONN-03**: 达梦数据库连接
+  - 使用 GORM + github.com/godoes/gorm-dameng v0.7.2（纯 Go 实现，无需 CGO）
   - 支持达梦 DM8+
+  - DSN 格式：dm://user:password@host:port?schema=database
+  - 默认端口：5236
 
 ### Execution (EXEC)
 
@@ -127,7 +129,7 @@
 |-------------|-------|--------|
 | CONN-01 | Phase 1 | Complete |
 | CONN-02 | Phase 1 | Complete |
-| CONN-03 | Phase 2 | Pending |
+| CONN-03 | Phase 4 | Complete |
 | EXEC-01 | Phase 1 | Complete |
 | EXEC-02 | Phase 1 | Complete |
 | EXEC-03 | Phase 1 | Complete |
