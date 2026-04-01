@@ -7,11 +7,10 @@ on:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
-  release:
-    name: Build and Release
+  build:
+    name: Build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -58,37 +57,42 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
-          go build -ldflags="-s -w" -o db-cli-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} ./cmd/db-cli
+          BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          go build -ldflags="-s -w -X github.com/xiaokexiang/db-cli/cmd.Version=${GITHUB_REF#refs/tags/} -X github.com/xiaokexiang/db-cli/cmd.Commit=${GITHUB_SHA::8} -X github.com/xiaokexiang/db-cli/cmd.Date=\"$BUILD_DATE\"" -o db-cli-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} ./cmd/db-cli
         working-directory: db-cli
 
-      - name: Upload release asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: db-cli/db-cli-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
-          asset_name: db-cli-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
-          asset_content_type: application/octet-stream
+          name: db-cli-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: db-cli/db-cli-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
+          retention-days: 1
 
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: release
-    if: always()
+    needs: build
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: db-cli-*
+          path: dist/
+
       - name: Generate changelog
         id: changelog
         run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s")
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      - name: Create Draft Release
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -125,5 +129,65 @@ jobs:
 
             - MySQL 5.7-8.x
             - Dameng DM8 (达梦数据库)
-          draft: false
+          draft: true
           prerelease: ${{ contains(github.ref, '-') }}
+
+      - name: Upload Windows x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/db-cli-windows-amd64/db-cli-windows-amd64.exe
+          asset_name: db-cli-windows-amd64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows ARM64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/db-cli-windows-arm64/db-cli-windows-arm64.exe
+          asset_name: db-cli-windows-arm64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS Intel
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/db-cli-darwin-amd64/db-cli-darwin-amd64
+          asset_name: db-cli-darwin-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS Apple Silicon
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/db-cli-darwin-arm64/db-cli-darwin-arm64
+          asset_name: db-cli-darwin-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux x64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/db-cli-linux-amd64/db-cli-linux-amd64
+          asset_name: db-cli-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux ARM64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/db-cli-linux-arm64/db-cli-linux-arm64
+          asset_name: db-cli-linux-arm64
+          asset_content_type: application/octet-stream
