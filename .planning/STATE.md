@@ -37,12 +37,12 @@ progress:
 ## Current Position
 
 Phase: 4
-Plan: 04 Complete
+Plan: 03 Complete
 | | |
 |---|---|
 | **Phase** | 4 — Dameng & Skill Integration |
-| **Plan** | 04 - GitHub Releases & Installer |
-| **Status** | Plan 04 Complete (2/2 plans in Phase 4) |
+| **Plan** | 03 - Skill Tools Implementation |
+| **Status** | Plan 03 Complete (2/2 plans in Phase 4) |
 | **Progress** | ████████████████████████████████████████ 100% (4/4 phases) |
 
 ---
@@ -57,7 +57,7 @@ Plan: 04 Complete
 | Coverage | 100% |
 | Plan 01-05 | 15 min | 4 tasks | 3 files |
 | Plan 04-01 | ~30 min | 5 tasks | 4 files |
-| Plan 04-04 | ~45 min | 7 tasks | 8 files |
+| Plan 04-03 | ~45 min | 7 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -71,6 +71,8 @@ Plan: 04 Complete
 | Table/CSV formatters use standard library | 2026-03-31 | MVP avoids external dependencies; pure Go implementation |
 | Dameng driver: github.com/godoes/gorm-dameng | 2026-04-01 | Active community driver (79 stars), pure Go, no CGO required |
 | DSN format: dm://user:pass@host:port?schema=db | 2026-04-01 | Required by gorm-dameng driver (not standard SQL driver pattern) |
+| Template matching over LLM SQL generation | 2026-04-01 | More controllable, predictable, and safer for database operations |
+| Tools delegate to db-cli binary | 2026-04-01 | Single source of truth, avoids duplicating SQL logic in TypeScript |
 
 ### Open Questions
 
@@ -85,18 +87,20 @@ Plan: 04 Complete
 
 ## Session Continuity
 
-**Last Session:** Phase 4 Plan 04 complete - GitHub Releases & Installer
+**Last Session:** Phase 4 Plan 03 complete - Skill Tools Implementation
 
 **Next Action:** Phase 4 complete - all plans done
 
 **Context to Carry:**
-- Plan 04-04 complete: GitHub Releases installer implemented
-- 6 platform builds supported via GitHub Actions matrix
-- `npx db-cli-skill install` command downloads and installs db-cli binary
-- Binary location: `~/.db-cli/bin/db-cli` (Unix), `%APPDATA%\.db-cli\bin\db-cli.exe` (Windows)
-- Auto-detects platform (windows/darwin/linux x amd64/arm64)
-- @octokit/rest for GitHub API
-- Release workflow: `.github/workflows/release.yml` triggers on v* tags
+- Plan 04-03 complete: Skill MCP server with 5 tools implemented
+- Tools: count, desc, export, import, exec - all delegate to db-cli binary
+- Template matching system for natural language parsing (D-09, D-10)
+- Templates in `src/templates/commands.ts` with 5 tool definitions
+- Matcher in `src/templates/matcher.ts` with confidence scoring
+- All tools use Zod schema validation
+- execa for spawning db-cli binary
+- MCP server registered with all 5 tools in `src/server/mcp-server.ts`
+- Template patterns handle variations like "show me the structure" vs "describe table"
 
 ---
 
