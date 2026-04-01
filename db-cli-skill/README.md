@@ -2,6 +2,93 @@
 
 A Model Context Protocol (MCP) server that enables Claude Code to perform database operations through the `db-cli` command-line tool.
 
+## Quick Start
+
+### 1. Install db-cli-skill and Download Binary
+
+```bash
+npx db-cli-skill install
+```
+
+This command will:
+- Download the latest `db-cli` binary from GitHub Releases
+- Install to `~/.db-cli/bin/db-cli` (macOS/Linux) or `%APPDATA%\.db-cli\bin\db-cli.exe` (Windows)
+- Set executable permissions automatically
+
+### 2. Configure Claude Code MCP
+
+Add the following to your Claude Code settings:
+
+**File:** `~/.claude/settings.json` (macOS/Linux) or `%APPDATA%\.claude\settings.json` (Windows)
+
+```json
+{
+  "mcpServers": {
+    "db-cli-skill": {
+      "command": "npx",
+      "args": ["-y", "db-cli-skill"],
+      "env": {
+        "GITHUB_TOKEN": "your_token_here"
+      }
+    }
+  }
+}
+```
+
+### 3. Verify Installation
+
+Restart Claude Code and verify:
+
+```
+/mcp list
+```
+
+You should see `db-cli-skill` in the list.
+
+## Installation Options
+
+### Install Specific Version
+
+```bash
+npx db-cli-skill install --version v1.0.0
+```
+
+### Force Reinstall
+
+```bash
+npx db-cli-skill install --force
+```
+
+### Check for Updates
+
+```bash
+npx db-cli-skill install --check
+```
+
+### Verify Installation
+
+```bash
+npx db-cli-skill install --verify
+```
+
+### Uninstall
+
+```bash
+npx db-cli-skill install --uninstall
+```
+
+## GitHub Personal Access Token (Optional)
+
+For higher GitHub API rate limits, set a token:
+
+1. Go to **GitHub Settings** > **Developer settings** > **Personal access tokens**
+2. Create a token with `public_repo` scope
+3. Set environment variable:
+
+```bash
+export GITHUB_TOKEN=your_token_here
+```
+
 ## Features
 
 The db-cli-skill exposes 5 tools for database operations:
@@ -19,28 +106,26 @@ The db-cli-skill exposes 5 tools for database operations:
 - **MySQL** (v5.7-8.x)
 - **Dameng DM8** (达梦数据库)
 
-## Prerequisites
+## Supported Platforms
 
-### 1. Node.js Runtime
+| Platform | Architecture | Binary Name |
+|----------|--------------|-------------|
+| Windows | x64 (amd64) | `db-cli-windows-amd64.exe` |
+| Windows | ARM64 | `db-cli-windows-arm64.exe` |
+| macOS | Intel (amd64) | `db-cli-darwin-amd64` |
+| macOS | Apple Silicon (arm64) | `db-cli-darwin-arm64` |
+| Linux | x64 (amd64) | `db-cli-linux-amd64` |
+| Linux | ARM64 | `db-cli-linux-arm64` |
 
-- Node.js v18.0 or higher
-- npm package manager
+## Manual Installation (Alternative)
 
-Verify installation:
-```bash
-node --version
-npm --version
-```
+If you prefer to install `db-cli` manually:
 
-### 2. db-cli Binary
+### 1. Download Binary
 
-Download the appropriate `db-cli` binary for your platform from the [GitHub Releases](https://github.com/xiaokexiang/database-cli/releases):
+Download from [GitHub Releases](https://github.com/xiaokexiang/database-cli/releases):
 
-- **Windows**: `db-cli.exe`
-- **macOS**: `db-cli` (Intel/Apple Silicon)
-- **Linux**: `db-cli` (x64/ARM64)
-
-Install to the expected location:
+### 2. Install to Expected Location
 
 **Windows:**
 ```powershell
@@ -60,43 +145,13 @@ mkdir -p ~/.db-cli/bin
 chmod +x ~/.db-cli/bin/db-cli
 ```
 
-### 3. GitHub Personal Access Token (Optional)
-
-For automatic release downloads, set a GitHub token:
-
-1. Go to GitHub Settings -> Developer settings -> Personal access tokens
-2. Create a token with `public_repo` scope
-3. Set environment variable:
-   ```bash
-   export GITHUB_TOKEN=your_token_here
-   ```
-
-## Installation
-
-### Clone the Repository
+### 3. Install Skill
 
 ```bash
-git clone https://github.com/xiaokexiang/db-cli-skill.git
-cd db-cli-skill
+npm install -g @xiaokexiang/db-cli-skill
 ```
 
-### Install Dependencies
-
-```bash
-npm install
-```
-
-### Build the Project
-
-```bash
-npm run build
-```
-
-## Claude Code Configuration
-
-Add the MCP server to your Claude Code configuration.
-
-### Option 1: Global Configuration
+### 4. Configure Claude Code
 
 Edit `~/.claude/settings.json` (macOS/Linux) or `%APPDATA%\.claude\settings.json` (Windows):
 
@@ -104,40 +159,12 @@ Edit `~/.claude/settings.json` (macOS/Linux) or `%APPDATA%\.claude\settings.json
 {
   "mcpServers": {
     "db-cli-skill": {
-      "command": "node",
-      "args": ["/absolute/path/to/db-cli-skill/dist/index.js"],
-      "env": {
-        "GITHUB_TOKEN": "your_token_here"
-      }
+      "command": "npx",
+      "args": ["-y", "db-cli-skill"]
     }
   }
 }
 ```
-
-### Option 2: Project Configuration
-
-Create `.claude/settings.json` in your project root:
-
-```json
-{
-  "mcpServers": {
-    "db-cli-skill": {
-      "command": "node",
-      "args": ["./path/to/db-cli-skill/dist/index.js"]
-    }
-  }
-}
-```
-
-### Verify Installation
-
-After configuration, restart Claude Code and verify the MCP server is connected:
-
-```
-/mcp list
-```
-
-You should see `db-cli-skill` in the list.
 
 ## Usage Examples
 
@@ -257,15 +284,30 @@ npm start
 db-cli-skill/
 ├── src/
 │   ├── index.ts              # MCP server entry point
-│   ├── server/
-│   │   └── mcp-server.ts     # Server configuration and tools
-│   └── utils/
-│       └── binary-path.ts    # Binary location management
+│   ├── cli/
+│   │   └── install-cmd.ts    # Installation CLI command
+│   ├── installer/
+│   │   ├── download.ts       # GitHub Release downloader
+│   │   └── install.ts        # Binary installation logic
+│   ├── utils/
+│   │   ├── binary-path.ts    # Binary path management
+│   │   └── platform.ts       # Platform detection
+│   └── templates/
+│       ├── commands.ts       # Natural language command templates
+│       └── matcher.ts        # Intent matching engine
 ├── dist/                     # Compiled JavaScript output
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
+
+## CI/CD
+
+This project uses GitHub Actions for automated builds and releases:
+
+- **Trigger:** Push to `v*` tags
+- **Platforms:** Windows/macOS/Linux x amd64/arm64
+- **Output:** Release assets on GitHub Releases
 
 ## License
 
