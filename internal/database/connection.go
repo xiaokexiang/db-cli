@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 
+	"github.com/godoes/gorm-dameng"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -81,7 +82,19 @@ func OpenConnection(cfg ConnectionConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to build DSN: %w", err)
 	}
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	var db *gorm.DB
+	switch cfg.DBType {
+	case "mysql", "":
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	case "dameng":
+		// Open Dameng connection using gorm-dameng driver
+		// Driver: github.com/godoes/gorm-dameng (GORM DM8 driver)
+		// Note: This is a pure Go implementation without CGO requirements
+		db, err = gorm.Open(dameng.Open(dsn), &gorm.Config{})
+	default:
+		return nil, fmt.Errorf("unsupported database type: %s", cfg.DBType)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
