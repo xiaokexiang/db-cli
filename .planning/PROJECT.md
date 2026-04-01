@@ -10,40 +10,60 @@
 
 ## Requirements
 
-### Validated
+### Validated (v1.0)
 
-- [x] **CONN-01**: 支持通过 flag 指定数据库连接参数 — Phase 1
-- [x] **CONN-02**: 支持 MySQL 数据库连接 — Phase 1
-- [x] **CONN-03**: 支持达梦数据库连接（使用 GORM + gorm-dameng）— Phase 4
-- [x] **EXEC-01**: exec 命令支持执行单条 SQL 语句 — Phase 1
-- [x] **EXEC-02**: exec 命令支持执行 SQL 文件 — Phase 1
-- [x] **EXEC-03**: SQL 文件执行遇到错误时立即停止 — Phase 1
-- [x] **EXEC-04**: 支持 --autocommit flag 控制事务提交方式 — Phase 1
-- [x] **DQL-01**: 查询结果默认以 JSON 格式输出 — Phase 1
-- [x] **DQL-02**: 支持表格/CSV 等输出格式选项 — Phase 2
-- [x] **DDL-01**: desc 命令支持查看表结构 — Phase 2
-- [x] **DDL-02**: desc 命令支持查看索引和外键 — Phase 2
-- [x] **DDL-03**: desc 命令支持查看数据库元数据 — Phase 2
-- [x] **IO-01**: export 命令支持按查询导出为 SQL INSERT 语句 — Phase 2
-- [x] **IO-02**: export 命令支持导出 DDL 语句 — Phase 2
-- [x] **IO-03**: import 命令导入 SQL 文件 — Phase 2 (import 作为 exec --file 的别名)
-- [x] **LOG-01**: 记录命令历史（不含密码等敏感信息）— Phase 3
-- [x] **LOG-02**: 记录错误日志 — Phase 3
-- [x] **SKILL-01**: Claude Code Skill 支持自然语言解析为 db-cli 命令 — Phase 4
-- [x] **SKILL-02**: Skill 安装时自动从 GitHub Releases 下载 db-cli — Phase 4
-- [x] **PLATFORM-01**: 支持 Windows/macOS/Linux 跨平台编译 — Phase 1/4
+All 22 v1 requirements validated and shipped in v1.0 milestone. See `.planning/milestones/v1.0-REQUIREMENTS.md` for full archive.
+
+**Core Requirements:**
+
+- ✓ **CONN-01/02/03**: Connection support (MySQL + Dameng) — v1.0
+- ✓ **EXEC-01/02/03/04**: SQL execution (single, file, error handling, transactions) — v1.0
+- ✓ **DQL-01/02**: Multi-format output (JSON, table, CSV) — v1.0
+- ✓ **DESC-01/02/03/04**: Schema inspection (table, indexes, foreign keys, metadata) — v1.0
+- ✓ **IO-01/02/03**: Import/export (SQL file, query export, table export) — v1.0
+- ✓ **LOG-01/02**: Logging (command history, error logs with password redaction) — v1.0
+- ✓ **SKILL-01/02**: Claude Code Skill (natural language parsing, auto-download from GitHub Releases) — v1.0
+- ✓ **PLATFORM-01/02**: Cross-platform builds (6 platforms, pure Go binary) — v1.0
 
 ### Active
 
-(None - all v1 requirements complete)
+(None — v1.0 complete. Next milestone requirements TBD via `/gsd:new-milestone`)
 
-### Out of Scope
+### Out of Scope (v1.0)
 
-- 交互式 REPL 模式 — 用户偏好纯子命令设计
-- 环境配置管理 — 每次执行时手动指定连接参数
-- 密码存储 — 不保存敏感信息到配置文件
-- AI 内置 — CLI 本身不提供 AI 能力，由 Skill 层负责
-- 安全限制 — 不拦截 CRUD 操作，信任配置即权限
+- **交互式 REPL 模式** — 用户偏好纯子命令设计，CI/CD 友好
+- **环境配置管理** — 每次执行时手动指定连接参数，安全考虑
+- **密码存储** — 不保存敏感信息到配置文件
+- **AI 内置** — CLI 本身不提供 AI 能力，由 Skill 层负责
+- **安全限制** — 不拦截 CRUD 操作，信任配置即权限
+- **连接池配置** — 使用 GORM 默认设置，简化设计
+
+## Current State (v1.0 Shipped)
+
+**Version:** v1.0 MVP — Complete (2026-04-01)
+
+**What Was Built:**
+
+A cross-platform database CLI tool written in Go with GORM integration for MySQL and Dameng databases. Users specify connection via DSN URL (`-c` flag) and can execute SQL, inspect schema, import/export data with multi-format output (JSON, table, CSV). Ships with Claude Code Skill for natural language command generation and automated binary installation from GitHub Releases.
+
+**Technical Stats:**
+
+| Metric | Value |
+|--------|-------|
+| Lines of Code | ~2,000 Go |
+| Commands | exec, import, export, desc, history, errors, ping |
+| Databases | MySQL 5.7+, Dameng DM8+ |
+| Platforms | Windows/macOS/Linux (amd64, arm64) |
+| Skill Tools | count, desc, export, import, exec |
+
+**Key Design Choices:**
+
+- DSN URL format for all connections (`mysql://...` or `dameng://...`)
+- No configuration files (security requirement)
+- Pure Go binaries (no CGO required for Dameng)
+- Template matching over LLM SQL generation (safer, more controllable)
+
+---
 
 ## Context
 
@@ -55,9 +75,9 @@
 **技术栈**:
 - 语言：Go
 - ORM: GORM
-- MySQL 驱动：go-sql-driver/mysql
-- 达梦驱动：dm-go-driver (需调研可用性)
-- 分发：GitHub Releases
+- MySQL 驱动：go-sql-driver/mysql v1.9.3
+- 达梦驱动：github.com/godoes/gorm-dameng v0.7.2 (纯 Go，无需 CGO)
+- 分发：GitHub Releases (6 平台支持)
 
 ## Constraints
 
@@ -70,14 +90,18 @@
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| GORM 作为 ORM 层 | 统一 MySQL 和达梦连接方式，便于扩展 | Phase 1 完成 |
-| 无环境配置设计 | 简化 CLI 设计，减少配置管理复杂度 | Phase 1 完成 |
-| Skill + CLI 两层架构 | 分离关注点：AI 处理意图，CLI 专注执行 | Phase 4 计划 |
-| 错误立即中断 | SQL 文件执行失败时避免级联错误 | Phase 1 完成 |
-| JSON 默认输出 | 机器可读，便于后续处理 | Phase 1 完成 |
-| 双仓库管理 | CLI 和 Skill 独立版本控制 | Pending |
-| MySQL-first MVP | 避免 Phase 1 中的 CGO/达梦复杂性 | Phase 1-2 完成 |
-| Table/CSV 格式化器使用标准库 | MVP 不引入外部依赖 | Phase 2 完成 |
+| GORM 作为 ORM 层 | 统一 MySQL 和达梦连接方式，便于扩展 | ✅ v1.0 |
+| 无环境配置设计 | 简化 CLI 设计，减少配置管理复杂度 | ✅ v1.0 |
+| Skill + CLI 两层架构 | 分离关注点：AI 处理意图，CLI 专注执行 | ✅ v1.0 |
+| 错误立即中断 | SQL 文件执行失败时避免级联错误 | ✅ v1.0 |
+| JSON 默认输出 | 机器可读，便于后续处理 | ✅ v1.0 |
+| MySQL-first MVP | 避免 Phase 1 中的 CGO/达梦复杂性 | ✅ v1.0 |
+| Table/CSV 格式化器使用标准库 | MVP 不引入外部依赖 | ✅ v1.0 |
+| Dameng 驱动：gorm-dameng v0.7.2 | 纯 Go 实现，无需 CGO | ✅ v1.0 |
+| DSN 格式：dm://user:pass@host:port?schema=db | gorm-dameng 要求的格式 | ✅ v1.0 |
+| 模板匹配优于 LLM SQL 生成 | 更可控、可预测、更安全 | ✅ v1.0 |
+| CLI 简化为只用 -c 标志 | 更简单的用户体验，避免标志冲突 | ✅ v1.0 |
+| 默认数据库：MySQL→mysql, Dameng→用户名 | 使数据库在 DSN 中可选 | ✅ v1.0 |
 
 ## Evolution
 
@@ -97,4 +121,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-31 after Phase 2 complete*
+*Last updated: 2026-04-01 after v1.0 milestone complete*
