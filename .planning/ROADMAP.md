@@ -9,7 +9,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-5 (shipped 2026-04-01) — [Archive](.planning/milestones/v1.0-ROADMAP.md)
-- 🔄 **v1.1 CI/CD 自动化** — Phase 6 complete, Phase 7 planning
+- 🔄 **v1.1 CI/CD 自动化** — Phase 6 complete, Phase 7 in progress
 
 ---
 
@@ -63,16 +63,14 @@ Plans:
 **Success Criteria:**
 1. 创建 PAT 并添加到 db-cli 仓库 Secrets
 2. workflow 成功检出 db-skill 仓库
-3. 二进制文件复制到 `binaries/vX.Y.Z/` 目录
+3. 二进制文件复制到 `scripts/` 目录
 4. latest 副本和 VERSION 文件更新成功
 5. commit 推送到 db-skill 仓库成功
 
-**Tasks:**
-1. 创建 Fine-grained PAT (Contents: R&W for db-skill)
-2. 添加 `CROSS_REPO_PAT` 到 db-cli 仓库 Secrets
-3. 在 release.yml 添加 deploy-to-db-skill 任务
-4. 实现文件复制和版本管理逻辑
-5. 端到端测试完整流程
+**Plans:** 1 plan
+
+Plans:
+- [ ] 07-01-PLAN.md — 配置 PAT 跨仓库推送，添加 deploy-to-db-skill job
 
 ---
 
