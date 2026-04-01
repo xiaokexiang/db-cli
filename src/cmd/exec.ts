@@ -12,10 +12,10 @@ export const execCmd = new Command('exec');
 
 execCmd
   .description('Execute SQL statements')
-  .configureHelp({ showGlobalOptions: false })
   .argument('<sql>', 'SQL statement(s) to execute')
-  .option('--format <format>', 'Output format: table, json, sql', 'table')
-  .option('--autocommit', 'Auto-commit each statement', true)
+  .option('--format <format>', 'Output format: table, json, sql (default: "table")')
+  .option('--autocommit', 'Auto-commit each statement (default: true)')
+  .helpOption(false)
   .hook('preAction', (thisCommand) => {
     const parent = thisCommand.parent as Command;
     if (!parent.opts().connection) {

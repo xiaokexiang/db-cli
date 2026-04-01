@@ -15,13 +15,13 @@ export const exportCmd = new Command('export');
 
 exportCmd
   .description('Export database data')
-  .configureHelp({ showGlobalOptions: false })
   .option('-q, --query <sql>', 'SQL query to execute and export')
   .option('-t, --table <name>', 'Table name to export (structure + data)')
   .requiredOption(
     '-o, --output <path>',
     'Output file path (format auto-detected from extension: .sql or .json)'
   )
+  .helpOption(false)
   .hook('preAction', (thisCommand) => {
     const parent = thisCommand.parent as Command;
     if (!parent.opts().connection) {

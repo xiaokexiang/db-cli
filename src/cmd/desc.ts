@@ -15,12 +15,12 @@ export const descCmd = new Command('desc');
 
 descCmd
   .description('Describe database schema')
-  .configureHelp({ showGlobalOptions: false })
   .option('-t, --table <name>', 'Table name to describe')
   .option('-i, --indexes', 'Show indexes for the table')
   .option('-k, --foreign-keys', 'Show foreign keys for the table')
   .option('-D, --databases', 'List all databases')
   .option('-B, --tables', 'List all tables in current database')
+  .helpOption(false)
   .hook('preAction', (thisCommand) => {
     const parent = thisCommand.parent as Command;
     if (!parent.opts().connection) {
