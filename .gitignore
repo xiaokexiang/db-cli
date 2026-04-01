@@ -31,3 +31,10 @@ build/
 # Node.js
 node_modules/
 dist/
+
+# GSD planning
+.planning/
+.continue-here.md
+
+# Claude
+.claude/
