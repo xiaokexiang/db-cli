@@ -21,9 +21,9 @@ func TestDamengDSN_BuildsCorrectly(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Dameng DSN format: user:password@tcp(host:port)/database
+	// Dameng DSN format: dm://user:password@host:port?schema=database
 	// Default port for Dameng is 5236 (not 3306 like MySQL)
-	expected := "DBA:SYSDBA@tcp(localhost:5236)/TEST"
+	expected := "dm://DBA:SYSDBA@localhost:5236?schema=TEST"
 	if dsn != expected {
 		t.Errorf("expected DSN: %s, got: %s", expected, dsn)
 	}
@@ -45,7 +45,8 @@ func TestDamengDSN_CustomPort(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expected := "DBA:SYSDBA@tcp(10.50.13.41:5237)/PROD"
+	// Dameng DSN format: dm://user:password@host:port?schema=database
+	expected := "dm://DBA:SYSDBA@10.50.13.41:5237?schema=PROD"
 	if dsn != expected {
 		t.Errorf("expected DSN: %s, got: %s", expected, dsn)
 	}

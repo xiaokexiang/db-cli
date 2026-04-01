@@ -146,22 +146,24 @@ func TestBuildDSN_UnsupportedDBType(t *testing.T) {
 	}
 }
 
-func TestBuildDSN_DamengNotSupported(t *testing.T) {
+func TestBuildDSN_DamengSupported(t *testing.T) {
 	cfg := ConnectionConfig{
 		Host:     "localhost",
-		Port:     3306,
-		User:     "root",
-		Password: "pass",
-		Database: "testdb",
+		Port:     5236,
+		User:     "DBA",
+		Password: "SYSDBA",
+		Database: "TEST",
 		DBType:   "dameng",
 	}
 
-	_, err := BuildDSN(cfg)
-	if err == nil {
-		t.Fatal("expected error for dameng type, got nil")
+	dsn, err := BuildDSN(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error for dameng type: %v", err)
 	}
-	if !strings.Contains(err.Error(), "dameng") {
-		t.Errorf("expected dameng not supported error, got: %v", err)
+	// Verify Dameng DSN format: dm://user:password@host:port?schema=database
+	expected := "dm://DBA:SYSDBA@localhost:5236?schema=TEST"
+	if dsn != expected {
+		t.Errorf("expected DSN: %s, got: %s", expected, dsn)
 	}
 }
 

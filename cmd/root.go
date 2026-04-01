@@ -73,11 +73,12 @@ func init() {
 
 	// Define persistent flags for connection parameters
 	rootCmd.PersistentFlags().StringVarP(&cfg.Host, "host", "h", "localhost", "Database host")
-	rootCmd.PersistentFlags().IntVarP(&cfg.Port, "port", "P", 3306, "Database port")
+	rootCmd.PersistentFlags().IntVarP(&cfg.Port, "port", "P", 0, "Database port (default: 3306 for mysql, 5236 for dameng)")
 	rootCmd.PersistentFlags().StringVarP(&cfg.User, "user", "u", "", "Database user (required)")
 	rootCmd.PersistentFlags().StringVarP(&cfg.Password, "password", "p", "", "Database password (use '-' to read from stdin)")
 	rootCmd.PersistentFlags().StringVarP(&cfg.Database, "database", "d", "", "Database name (required)")
 	rootCmd.PersistentFlags().StringVarP(&cfg.DBType, "type", "t", "mysql", "Database type (mysql, dameng)")
 
 	// Note: Required flag validation (user, database) is handled by commands that need database connections
+	// Port defaults are handled in internal/database/connection.go (3306 for mysql, 5236 for dameng)
 }

@@ -60,9 +60,10 @@ func BuildDSN(cfg ConnectionConfig) (string, error) {
 		if port == 0 {
 			port = 5236
 		}
-		// Dameng DSN format: user:password@tcp(host:port)/database
+		// Dameng DSN format: dm://user:password@host:port?schema=database
 		// Driver: github.com/godoes/gorm-dameng (GORM DM8 driver)
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
+		// Note: DSN must start with dm:// for the dameng driver
+		dsn := fmt.Sprintf("dm://%s:%s@%s:%d?schema=%s",
 			cfg.User,
 			cfg.Password,
 			cfg.Host,
