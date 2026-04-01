@@ -1,35 +1,35 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: MVP
-status: complete
-last_updated: "2026-04-01T12:00:00.000Z"
+milestone: v1.1
+milestone_name: CI/CD 自动化与跨仓库分发
+status: in_progress
+last_updated: "2026-04-01T14:30:00.000Z"
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 17
-  completed_plans: 17
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # db-cli State
 
 **Project:** db-cli
-**Milestone:** v1.0 MVP — COMPLETE ✅
-**Shipped:** 2026-04-01
+**Milestone:** v1.1 CI/CD 自动化与跨仓库分发 — IN PROGRESS
+**Started:** 2026-04-01
 
 ---
 
 ## Project Reference
 
-**Core Value:** Let users complete database operations via natural language or simple commands without memorizing complex SQL syntax and connection parameters, while maintaining full control over the database.
+**Core Value:** 让用户通过自然语言或简单命令即可完成数据库操作，无需记忆复杂的 SQL 语法和连接参数，同时保持对数据库的完全控制。
 
-**Current Focus:** v1.0 shipped — Planning next milestone (v2.0)
+**Current Focus:** v1.1 — CI/CD 自动化构建与跨仓库分发
 
 **See:** `.planning/PROJECT.md` for full project context
 
 ---
 
-## v1.0 Summary
+## v1.0 Summary (Archived)
 
 | Metric | Value |
 |--------|-------|
@@ -52,30 +52,30 @@ progress:
 
 ---
 
+## Current Position
+
+**Phase:** Not started (defining requirements)
+**Plan:** —
+**Status:** Defining requirements
+**Last activity:** 2026-04-01 — Milestone v1.1 started
+
+---
+
 ## Archived Artifacts
 
 - **Roadmap:** `.planning/milestones/v1.0-ROADMAP.md`
 - **Requirements:** `.planning/milestones/v1.0-REQUIREMENTS.md`
-- **Current ROADMAP.md:** Collapsed to summary with link to archive
 
 ---
 
 ## Next Steps
 
-**v2.0 Planning** — Start next milestone cycle
+**v1.1 Planning** — Complete requirements definition and roadmap
 
 ```
-/gsd:new-milestone
+/gsd:plan-phase 1
 ```
-
-Next milestone may include:
-- PostgreSQL support
-- SQLite support
-- Batch mode (stdin SQL input)
-- Progress bars for large imports
-- Data masking for exports
-- SQL formatting
 
 ---
 
-*Last updated: 2026-04-01 — v1.0 milestone complete*
+*Last updated: 2026-04-01 — v1.1 milestone in progress*

@@ -27,7 +27,11 @@ All 22 v1 requirements validated and shipped in v1.0 milestone. See `.planning/m
 
 ### Active
 
-(None — v1.0 complete. Next milestone requirements TBD via `/gsd:new-milestone`)
+**v1.1: CI/CD 自动化与跨仓库分发**
+
+- **CI/CD-01**: 推送后自动触发多架构构建
+- **CI/CD-02**: 自动上传构建产物到 GitHub Releases
+- **CI/CD-03**: 自动更新其他 GitHub 工程仓库的二进制文件
 
 ### Out of Scope (v1.0)
 
@@ -41,6 +45,17 @@ All 22 v1 requirements validated and shipped in v1.0 milestone. See `.planning/m
 ## Current State (v1.0 Shipped)
 
 **Version:** v1.0 MVP — Complete (2026-04-01)
+
+---
+
+## Current Milestone: v1.1 CI/CD 自动化与跨仓库分发
+
+**Goal:** 配置 GitHub Actions 在每次推送后自动构建多架构二进制文件，并更新到 GitHub 上你自己的其他工程仓库中
+
+**Target features:**
+- 推送后自动触发多架构构建 (Windows/macOS/Linux × amd64/arm64)
+- 自动上传构建产物到 GitHub Releases
+- 自动更新 GitHub 上其他指定工程仓库的二进制文件
 
 **What Was Built:**
 
@@ -121,4 +136,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-01 after v1.0 milestone complete*
+*Last updated: 2026-04-01 — v1.1 milestone started*
