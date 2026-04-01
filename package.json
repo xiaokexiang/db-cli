@@ -1,6 +1,6 @@
 {
   "name": "@xiaokexiang/db-cli",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A cross-platform database CLI tool for MySQL and Dameng (DM8)",
   "main": "dist/index.js",
   "bin": {
