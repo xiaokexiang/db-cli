@@ -40,12 +40,15 @@
 3. 所有二进制文件作为 release assets 上传成功
 4. Release 描述包含自动生成的 changelog
 
-**Tasks:**
-1. 审查现有 release.yml workflow
-2. 优化矩阵构建配置
-3. 配置 artifacts 上传
-4. 配置 release asset 上传
-5. 测试 draft release
+**Plans:** 1 plan
+
+Plans:
+- [ ] 06-01-PLAN.md — 优化 release.yml workflow 配置（权限精简、job 依赖修复、changelog 生成健壮）
+
+**Wave Structure:**
+- Wave 1: 06-01 (自主执行，含 checkpoint 验证)
+
+**Next:** 执行 `/gsd:execute-phase 06` 实施 workflow 优化
 
 ---
 
