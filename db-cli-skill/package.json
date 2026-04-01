@@ -4,6 +4,9 @@
   "description": "Claude Code Skill for database operations using db-cli",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "db-cli-skill": "./dist/cli/install-cmd.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
