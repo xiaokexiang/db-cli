@@ -1,0 +1,39 @@
+{
+  "name": "@xiaokexiang/db-cli",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "db-cli.js",
+  "scripts": {
+    "db-cli": "node --openssl-legacy-provider db-cli.js"
+  },
+  "bin": {
+    "db-cli": "./src/bin.cjs"
+  },
+  "keywords": [
+    "database",
+    "cli",
+    "sql",
+    "mysql",
+    "dameng"
+  ],
+  "author": "xiaokexiang",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xiaokexiang/db-cli.git"
+  },
+  "description": "多数据库 CLI 工具 - 支持 MySQL 和达梦数据库",
+  "dependencies": {
+    "cac": "^7.0.0",
+    "dmdb": "^1.0.48286",
+    "mysql2": "^3.20.0"
+  },
+  "engines": {
+    "node": ">=12"
+  },
+  "os": [
+    "win32",
+    "linux",
+    "darwin"
+  ]
+}
