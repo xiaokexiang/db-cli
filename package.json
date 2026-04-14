@@ -4,7 +4,8 @@
   "type": "module",
   "main": "db-cli.js",
   "scripts": {
-    "db-cli": "node --openssl-legacy-provider db-cli.js"
+    "db-cli": "node --openssl-legacy-provider db-cli.js",
+    "test": "node --openssl-legacy-provider test/test-db-cli.js"
   },
   "bin": {
     "db-cli": "./src/bin.cjs"

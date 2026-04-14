@@ -671,8 +671,22 @@ async function runExec(conn, options) {
 
     for (let i = 0; i < statements.length; i++) {
       const statementStartTime = Date.now();
+      const statement = statements[i];
       try {
-        const result = await conn.execute(statements[i]);
+        // MySQL: DDL 和管理命令不能用 prepared statement 执行，需要使用 raw.query
+        let result;
+        if (conn.type === "mysql") {
+          const ddlPattern = /^\s*(USE|SET|SHOW|CREATE|DROP|ALTER|TRUNCATE|REPLACE|RENAME|LOAD|LOCK|UNLOCK|GRANT|REVOKE|FLUSH|RESET|CALL|BEGIN|COMMIT|ROLLBACK|START\s+TRANSACTION)\s*/i;
+          if (ddlPattern.test(statement)) {
+            await conn.raw.query(statement);
+            result = { updateCount: 0 };
+          } else {
+            result = await conn.execute(statement);
+          }
+        } else {
+          result = await conn.execute(statement);
+        }
+
         const elapsed = Date.now() - statementStartTime;
         if (result.rows && result.metaData) {
           results.push({
@@ -702,7 +716,22 @@ async function runExec(conn, options) {
     try {
       for (let i = 0; i < statements.length; i++) {
         const statementStartTime = Date.now();
-        const result = await conn.execute(statements[i]);
+        const statement = statements[i];
+
+        // MySQL: DDL 和管理命令不能用 prepared statement 执行，需要使用 raw.query
+        let result;
+        if (conn.type === "mysql") {
+          const ddlPattern = /^\s*(USE|SET|SHOW|CREATE|DROP|ALTER|TRUNCATE|REPLACE|RENAME|LOAD|LOCK|UNLOCK|GRANT|REVOKE|FLUSH|RESET|CALL|BEGIN|COMMIT|ROLLBACK|START\s+TRANSACTION)\s*/i;
+          if (ddlPattern.test(statement)) {
+            await conn.raw.query(statement);
+            result = { updateCount: 0 };
+          } else {
+            result = await conn.execute(statement);
+          }
+        } else {
+          result = await conn.execute(statement);
+        }
+
         const elapsed = Date.now() - statementStartTime;
         if (result.rows && result.metaData) {
           results.push({
