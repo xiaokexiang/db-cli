@@ -1048,7 +1048,7 @@ cli.option(
 
 // import 子命令
 cli
-  .command("import [...files]", "导入 SQL 文件到数据库")
+  .command("import", "导入 SQL 文件到数据库")
   .option("-f, --file <path>", "SQL 文件路径（支持通配符，如 *.sql 或 **/*.sql）")
   .option("-s, --schema <name>", "Schema/数据库名称")
   .option("--continue-on-error", "遇到错误继续执行")
@@ -1180,6 +1180,15 @@ function handleCLIError(err) {
     const unknownOption = optionMatch ? (optionMatch[1] || optionMatch[2]) : "未知选项";
     console.error(`错误：无效的选项 ${unknownOption}`);
     console.error(`使用 --help 查看可用的选项`);
+    process.exit(1);
+  }
+
+  // 未使用的位置参数（如 exec 命令后直接跟了未定义的参数）
+  if (message.includes("Unused args") || message.includes("unused args")) {
+    const argsMatch = message.match(/Unused args:\s*(?:`([^`]+)`|'([^']+)'|(.+))/i);
+    const unusedArg = argsMatch ? (argsMatch[1] || argsMatch[2] || argsMatch[3] || "未知参数") : "多余参数";
+    console.error(`错误：多余的参数 ${unusedArg}`);
+    console.error(`使用 --help 查看帮助信息`);
     process.exit(1);
   }
 
