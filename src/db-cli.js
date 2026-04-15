@@ -397,7 +397,7 @@ async function executeSqlStatements(conn, statements, config) {
       });
       if (!continueOnError) {
         console.log();
-        console.log(`❌ 第 ${lineNumber} 行 SQL 执行失败:`);
+        console.log(`第 ${lineNumber} 行 SQL 执行失败:`);
         console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
 
         // 显示错误代码（如果有）
@@ -417,7 +417,7 @@ async function executeSqlStatements(conn, statements, config) {
 
         console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
         await conn.rollback();
-        console.log(`\n💾 事务已回滚`);
+        console.log(`\n事务已回滚`);
         throw err;
       }
     }
