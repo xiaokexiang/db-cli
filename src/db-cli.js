@@ -3,6 +3,7 @@ import mysql from "mysql2/promise";
 import dm from "dmdb";
 import fs from "fs";
 import cac from "cac";
+import glob from "fast-glob";
 
 // ============================================
 // DB-CLI - 多数据库 CLI 工具
@@ -338,6 +339,21 @@ export function readSqlFile(filePath, dbType = "dm") {
   return statements;
 }
 
+// MySQL DDL 和管理命令判断正则
+const MYSQL_DDL_PATTERN = /^\s*(USE|SET|SHOW|CREATE|DROP|ALTER|TRUNCATE|REPLACE|RENAME|LOAD|LOCK|UNLOCK|GRANT|REVOKE|FLUSH|RESET|CALL|BEGIN|COMMIT|ROLLBACK|START\s+TRANSACTION)\s*/i;
+
+/**
+ * 执行单条 MySQL 语句
+ * MySQL 的 DDL 和管理命令不能用 prepared statement 执行，需要使用 raw.query
+ */
+async function executeMySqlStatement(conn, sql) {
+  if (MYSQL_DDL_PATTERN.test(sql)) {
+    await conn.raw.query(sql);
+    return { updateCount: 0 };
+  }
+  return await conn.execute(sql);
+}
+
 async function executeSqlStatements(conn, statements, config) {
   const continueOnError = config.continueOnError;
   let success = 0;
@@ -357,22 +373,16 @@ async function executeSqlStatements(conn, statements, config) {
     const endLine = typeof stmt === "object" ? stmt.endLine : null;
 
     try {
-      // MySQL: DDL 和管理命令不能用 prepared statement 执行，需要使用 raw.query
+      // MySQL: DDL 和管理命令使用 raw.query，其他使用 execute
       if (conn.type === "mysql") {
-        // 检查是否是 DDL 或管理命令
-        // 包含：USE, SET, SHOW, CREATE, DROP, ALTER, TRUNCATE, REPLACE, RENAME, LOAD, LOCK, UNLOCK
-        // GRANT, REVOKE, FLUSH, RESET, CALL, BEGIN, COMMIT, ROLLBACK 等
-        const ddlPattern = /^\s*(USE|SET|SHOW|CREATE|DROP|ALTER|TRUNCATE|REPLACE|RENAME|LOAD|LOCK|UNLOCK|GRANT|REVOKE|FLUSH|RESET|CALL|BEGIN|COMMIT|ROLLBACK|START\s+TRANSACTION)\s*/i;
-        if (ddlPattern.test(sql)) {
-          await conn.raw.query(sql);
-          success++;
-          const progressStep = Math.max(1, Math.floor(total / 100));
-          if (i + 1 - lastProgressUpdate >= progressStep) {
-            updateProgress(i + 1, total);
-            lastProgressUpdate = i + 1;
-          }
-          continue;
+        await executeMySqlStatement(conn, sql);
+        success++;
+        const progressStep = Math.max(1, Math.floor(total / 100));
+        if (i + 1 - lastProgressUpdate >= progressStep) {
+          updateProgress(i + 1, total);
+          lastProgressUpdate = i + 1;
         }
+        continue;
       }
 
       await conn.execute(sql);
@@ -429,65 +439,152 @@ async function executeSqlStatements(conn, statements, config) {
 
   console.log(`\n完成：${success} 成功，${errors} 失败`);
 
-  // --continue-on-error 模式下显示失败统计和前 10 条失败 SQL
-  if (errorDetails.length > 0 && continueOnError) {
-    const displayCount = Math.min(10, errorDetails.length);
-    console.log(`\n⚠️  共有 ${errorDetails.length} 条语句执行失败，以下是前 ${displayCount} 条:`);
-    for (let i = 0; i < displayCount; i++) {
-      const err = errorDetails[i];
-      console.log(`\n❌ 第 ${err.lineNumber} 行:`);
-      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+  // --continue-on-error 模式下，单文件内错误不立即显示，留待最终汇总
+  // 只返回错误详情，由上层调用者决定如何展示
 
-      // 显示错误代码（如果有）
-      if (err.errorCode) {
-        console.log(`错误代码：${err.errorCode}`);
-      }
+  return { success, errors, errorDetails };
+}
 
-      // 显示错误原因
-      console.log(`错误原因：${err.message}`);
+async function runImport(conn, options, positionalFiles = []) {
+  // 合并 -f 选项和位置参数的文件
+  const fileInputs = [];
 
-      // 显示 SQL 语句（短 SQL 显示全部，长 SQL 显示前 300 字符）
-      if (err.sql.length <= 150) {
-        console.log(`\nSQL 语句:\n${err.sql}`);
-      } else {
-        console.log(`\nSQL 语句（前 300 字符）:\n${err.sql.substring(0, 300)}...`);
-      }
-
-      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+  if (options.file) {
+    // -f 选项可以是单个字符串或数组（取决于用户如何传递）
+    if (Array.isArray(options.file)) {
+      fileInputs.push(...options.file);
+    } else {
+      fileInputs.push(options.file);
     }
   }
 
-  return { success, errors };
-}
+  // 添加位置参数（shell 展开的通配符结果）
+  if (positionalFiles && positionalFiles.length > 0) {
+    fileInputs.push(...positionalFiles);
+  }
 
-async function runImport(conn, options) {
-  const config = {
-    file: options.file,
-    continueOnError: options.continueOnError || false,
-    dbType: conn.type, // 从连接对象获取数据库类型
-  };
-
-  if (!config.file) {
+  if (fileInputs.length === 0) {
     console.error("错误：缺少必填参数 -f/--file");
     process.exit(1);
   }
 
-  if (!fs.existsSync(config.file)) {
-    console.error(`错误：文件不存在：${config.file}`);
+  // 配置
+  const config = {
+    file: fileInputs,
+    continueOnError: options.continueOnError || false,
+    dbType: conn.type, // 从连接对象获取数据库类型
+  };
+
+  // 使用 glob 匹配文件（支持通配符）
+  const matchedFiles = [];
+
+  for (const pattern of fileInputs) {
+    const files = await glob(pattern, { onlyFiles: true, caseSensitiveMatch: true });
+    matchedFiles.push(...files);
+  }
+
+  if (matchedFiles.length === 0) {
+    console.error(`错误：未找到匹配的文件：${fileInputs.join(", ")}`);
     process.exit(1);
   }
 
   console.log("导入 SQL 文件");
   console.log("============");
-  console.log(`文件：${config.file}`);
+  console.log(`匹配到 ${matchedFiles.length} 个文件:`);
+  matchedFiles.forEach(f => console.log(`  - ${f}`));
   console.log("");
 
-  const statements = readSqlFile(config.file, config.dbType);
-  console.log(`读取到 ${statements.length} 条 SQL 语句`);
-  console.log("");
+  let totalSuccess = 0;
+  let totalErrors = 0;
+  const allErrorDetails = []; // 汇总所有文件的错误详情
 
-  await executeSqlStatements(conn, statements, config);
-  console.log("导入完成");
+  for (const file of matchedFiles) {
+    console.log(`处理文件：${file}`);
+    const statements = readSqlFile(file, config.dbType);
+    console.log(`读取到 ${statements.length} 条 SQL 语句`);
+
+    try {
+      const result = await executeSqlStatements(conn, statements, config);
+      totalSuccess += result.success;
+      totalErrors += result.errors;
+
+      // 收集错误详情（带上文件名）
+      if (result.errorDetails && result.errorDetails.length > 0) {
+        for (const err of result.errorDetails) {
+          allErrorDetails.push({
+            ...err,
+            fileName: file,
+          });
+        }
+      }
+    } catch (err) {
+      // 非 continue-on-error 模式下，某个文件失败会抛出错误并停止
+      // 将当前已累积的错误也加入汇总
+      if (allErrorDetails.length === 0 && result?.errorDetails) {
+        for (const err of result.errorDetails) {
+          allErrorDetails.push({
+            ...err,
+            fileName: file,
+          });
+        }
+      }
+      throw err;
+    }
+    console.log("");
+  }
+
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log(`导入完成！总计：${totalSuccess + totalErrors} 条语句，${totalSuccess} 成功，${totalErrors} 失败`);
+
+  // --continue-on-error 模式下，汇总展示所有文件的错误
+  if (allErrorDetails.length > 0 && config.continueOnError) {
+    console.log("");
+    console.log(`⚠️  共有 ${allErrorDetails.length} 条语句执行失败`);
+    console.log("");
+
+    // 按文件分组展示
+    const errorsByFile = {};
+    for (const err of allErrorDetails) {
+      if (!errorsByFile[err.fileName]) {
+        errorsByFile[err.fileName] = [];
+      }
+      errorsByFile[err.fileName].push(err);
+    }
+
+    const displayFileCount = Object.keys(errorsByFile).length;
+    console.log(`以下 ${displayFileCount} 个文件有错误：`);
+    console.log("");
+
+    for (const [fileName, errors] of Object.entries(errorsByFile)) {
+      console.log(`📁 ${fileName} (${errors.length} 条失败)`);
+      console.log(`───────────────────────────────────────────────────────`);
+
+      // 每个文件展示前 5 条错误
+      const displayCount = Math.min(5, errors.length);
+      for (let i = 0; i < displayCount; i++) {
+        const err = errors[i];
+        console.log(`  ❌ 第 ${err.index} 条语句 (文件第 ${err.lineNumber} 行):`);
+
+        if (err.errorCode) {
+          console.log(`     错误代码：${err.errorCode}`);
+        }
+        console.log(`     错误原因：${err.message}`);
+
+        // 短 SQL 显示全部，长 SQL 显示前 200 字符
+        if (err.sql.length <= 100) {
+          console.log(`     SQL: ${err.sql}`);
+        } else {
+          console.log(`     SQL: ${err.sql.substring(0, 200)}...`);
+        }
+        console.log("");
+      }
+
+      if (errors.length > displayCount) {
+        console.log(`  ... 还有 ${errors.length - displayCount} 条错误，请使用日志查看完整信息`);
+      }
+      console.log("");
+    }
+  }
 }
 
 // ============================================
@@ -798,19 +895,10 @@ async function runExec(conn, options) {
       const statementStartTime = Date.now();
       const statement = statements[i];
       try {
-        // MySQL: DDL 和管理命令不能用 prepared statement 执行，需要使用 raw.query
-        let result;
-        if (conn.type === "mysql") {
-          const ddlPattern = /^\s*(USE|SET|SHOW|CREATE|DROP|ALTER|TRUNCATE|REPLACE|RENAME|LOAD|LOCK|UNLOCK|GRANT|REVOKE|FLUSH|RESET|CALL|BEGIN|COMMIT|ROLLBACK|START\s+TRANSACTION)\s*/i;
-          if (ddlPattern.test(statement)) {
-            await conn.raw.query(statement);
-            result = { updateCount: 0 };
-          } else {
-            result = await conn.execute(statement);
-          }
-        } else {
-          result = await conn.execute(statement);
-        }
+        // MySQL: DDL 和管理命令使用 raw.query，其他使用 execute
+        const result = conn.type === "mysql"
+          ? await executeMySqlStatement(conn, statement)
+          : await conn.execute(statement);
 
         const elapsed = Date.now() - statementStartTime;
         if (result.rows && result.metaData) {
@@ -843,19 +931,10 @@ async function runExec(conn, options) {
         const statementStartTime = Date.now();
         const statement = statements[i];
 
-        // MySQL: DDL 和管理命令不能用 prepared statement 执行，需要使用 raw.query
-        let result;
-        if (conn.type === "mysql") {
-          const ddlPattern = /^\s*(USE|SET|SHOW|CREATE|DROP|ALTER|TRUNCATE|REPLACE|RENAME|LOAD|LOCK|UNLOCK|GRANT|REVOKE|FLUSH|RESET|CALL|BEGIN|COMMIT|ROLLBACK|START\s+TRANSACTION)\s*/i;
-          if (ddlPattern.test(statement)) {
-            await conn.raw.query(statement);
-            result = { updateCount: 0 };
-          } else {
-            result = await conn.execute(statement);
-          }
-        } else {
-          result = await conn.execute(statement);
-        }
+        // MySQL: DDL 和管理命令使用 raw.query，其他使用 execute
+        const result = conn.type === "mysql"
+          ? await executeMySqlStatement(conn, statement)
+          : await conn.execute(statement);
 
         const elapsed = Date.now() - statementStartTime;
         if (result.rows && result.metaData) {
@@ -1000,12 +1079,12 @@ function checkConnectionStr() {
 
 // import 子命令
 cli
-  .command("import", "导入 SQL 文件到数据库")
-  .option("-f, --file <path>", "SQL 文件路径")
+  .command("import [...files]", "导入 SQL 文件到数据库")
+  .option("-f, --file <path>", "SQL 文件路径（支持通配符，如 *.sql 或 **/*.sql）")
   .option("-s, --schema <name>", "Schema/数据库名称")
   .option("--continue-on-error", "遇到错误继续执行")
   .alias("i")
-  .action(async (options) => {
+  .action(async (files, options) => {
     const connStr = checkConnectionStr();
     try {
       const connInfo = parseConnectionString(connStr);
@@ -1026,7 +1105,9 @@ cli
       }
       console.log("");
 
-      await runImport(conn, options);
+      // 合并 -f 选项和位置参数的文件路径
+      const positionalFiles = files || [];
+      await runImport(conn, options, positionalFiles);
 
       await conn.close();
     } catch (err) {

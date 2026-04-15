@@ -5,7 +5,8 @@
   "main": "db-cli.js",
   "scripts": {
     "db-cli": "node --openssl-legacy-provider db-cli.js",
-    "test": "node --openssl-legacy-provider test/test-db-cli.js"
+    "test": "node --openssl-legacy-provider test/test-db-cli.js",
+    "test:wildcard": "node --openssl-legacy-provider test/test-wildcard-import.js"
   },
   "bin": {
     "db-cli": "./src/bin.cjs"
@@ -27,6 +28,7 @@
   "dependencies": {
     "cac": "^7.0.0",
     "dmdb": "^1.0.48286",
+    "fast-glob": "^3.3.3",
     "mysql2": "^3.20.0"
   },
   "engines": {
