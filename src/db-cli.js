@@ -849,9 +849,7 @@ async function runExec(conn, options) {
   };
 
   if (!config.sql) {
-    console.error("错误：缺少 SQL 语句，请使用 -q/--query 指定");
-    showExecHelp();
-    process.exit(1);
+    throw new Error("缺少 SQL 语句，请使用 -q/--query 指定");
   }
 
   // 验证 format 参数
@@ -862,9 +860,7 @@ async function runExec(conn, options) {
     } else if (formatValue === "table") {
       config.format = "table";
     } else {
-      console.error("错误：--format 必须是 json 或 table");
-      showExecHelp();
-      process.exit(1);
+      throw new Error("--format 必须是 json 或 table");
     }
   }
 
@@ -1043,39 +1039,12 @@ function formatRows(rows, metaData) {
 
 const cli = cac("db-cli");
 
-// 全局连接选项
+// 全局连接选项（必填）
 cli.option(
   "-c, --connection <string>",
   "数据库连接字符串\n                                  达梦数据库：dm://user:pass@host:port\n                                  MySQL: mysql://user:pass@host:port",
+  { required: true },
 );
-
-// 获取全局选项的辅助函数
-function getConnectionStr() {
-  return cli.options.connection;
-}
-
-// 检查连接字符串的辅助函数
-function checkConnectionStr() {
-  const connStr = getConnectionStr();
-  // 空字符串视为未提供连接
-  if (!connStr || connStr.trim() === "") {
-    console.error("错误：缺少必填参数 -c/--connection");
-    console.error("用法：db -c '<连接字符串>' <command> [options]");
-    console.error("");
-    console.error("示例:");
-    console.error("  # 达梦数据库");
-    console.error(
-      "  db -c 'dm://SYSDBA:SYSDBA@10.50.8.44:5236' exec -q 'SELECT 1'",
-    );
-    console.error("");
-    console.error("  # MySQL");
-    console.error(
-      "  db -c 'mysql://root:password@localhost:3306' exec -q 'SELECT 1'",
-    );
-    process.exit(1);
-  }
-  return connStr;
-}
 
 // import 子命令
 cli
@@ -1085,36 +1054,65 @@ cli
   .option("--continue-on-error", "遇到错误继续执行")
   .alias("i")
   .action(async (files, options) => {
-    const connStr = checkConnectionStr();
-    try {
-      const connInfo = parseConnectionString(connStr);
-      console.log(`连接数据库：${connInfo.host}:${connInfo.port}`);
-      console.log(`用户：${connInfo.username}`);
-      console.log(
-        `类型：${connInfo.type === "mysql" ? "MySQL" : "达梦数据库"}`,
-      );
-      console.log("");
-
-      const conn = await createConnection(connInfo);
-      console.log("数据库连接成功");
-
-      // MySQL 需要先选择数据库
-      if (conn.type === "mysql" && options.schema) {
-        await conn.raw.query(`USE \`${options.schema}\``);
-        console.log(`已选择数据库：${options.schema}`);
+    // 先验证 -f 和位置参数至少有一个（在连接数据库之前）
+    const fileInputs = [];
+    if (options.file) {
+      if (Array.isArray(options.file)) {
+        fileInputs.push(...options.file);
+      } else {
+        fileInputs.push(options.file);
       }
-      console.log("");
+    }
+    if (files && files.length > 0) {
+      fileInputs.push(...files);
+    }
 
-      // 合并 -f 选项和位置参数的文件路径
-      const positionalFiles = files || [];
-      await runImport(conn, options, positionalFiles);
-
-      await conn.close();
-    } catch (err) {
-      // 错误详情已在 executeSqlStatements 中打印
+    if (fileInputs.length === 0) {
+      console.error(`错误：缺少必填参数 -f/--file`);
+      console.error(`使用 --help 查看帮助信息`);
       process.exit(1);
     }
+
+    const connInfo = validateConnection(options.connection);
+    const conn = await createConnection(connInfo);
+    console.log("数据库连接成功");
+
+    // MySQL 需要先选择数据库
+    if (conn.type === "mysql" && options.schema) {
+      await conn.raw.query(`USE \`${options.schema}\``);
+      console.log(`已选择数据库：${options.schema}`);
+    }
+    console.log("");
+
+    // 合并 -f 选项和位置参数的文件路径
+    const positionalFiles = files || [];
+    await runImport(conn, options, positionalFiles);
+
+    await conn.close();
   });
+
+// 验证并解析连接字符串的辅助函数
+function validateConnection(connStr) {
+  // 空字符串视为未提供连接
+  if (!connStr || connStr.trim() === "") {
+    console.error(`错误：缺少必填参数 -c/--connection`);
+    console.error(`使用 --help 查看帮助信息`);
+    process.exit(1);
+  }
+
+  try {
+    const connInfo = parseConnectionString(connStr);
+    console.log(`连接数据库：${connInfo.host}:${connInfo.port}`);
+    console.log(`用户：${connInfo.username}`);
+    console.log(`类型：${connInfo.type === "mysql" ? "MySQL" : "达梦数据库"}`);
+    console.log("");
+    return connInfo;
+  } catch (err) {
+    console.error(`错误：${err.message}`);
+    console.error(`使用 --help 查看帮助信息`);
+    process.exit(1);
+  }
+}
 
 // export 子命令
 cli
@@ -1127,27 +1125,21 @@ cli
   .option("--type <type>", "导出类型：schema|data|all", { default: "all" })
   .alias("e")
   .action(async (options) => {
-    const connStr = checkConnectionStr();
-    try {
-      const connInfo = parseConnectionString(connStr);
-      console.log(`连接数据库：${connInfo.host}:${connInfo.port}`);
-      console.log(`用户：${connInfo.username}`);
-      console.log(
-        `类型：${connInfo.type === "mysql" ? "MySQL" : "达梦数据库"}`,
-      );
-      console.log("");
-
-      const conn = await createConnection(connInfo);
-      console.log("数据库连接成功");
-      console.log("");
-
-      await runExport(conn, options);
-
-      await conn.close();
-    } catch (err) {
-      console.error("错误:", err.message);
+    // 先验证必填参数（在连接数据库之前）
+    if (!options.schema && !options.query) {
+      console.error(`错误：缺少必填参数 -s/--schema 或 -q/--query`);
+      console.error(`使用 --help 查看帮助信息`);
       process.exit(1);
     }
+
+    const connInfo = validateConnection(options.connection);
+    const conn = await createConnection(connInfo);
+    console.log("数据库连接成功");
+    console.log("");
+
+    await runExport(conn, options);
+
+    await conn.close();
   });
 
 // exec 子命令
@@ -1158,31 +1150,51 @@ cli
   .option("--continue-on-error", "遇到错误继续执行")
   .alias("x")
   .action(async (options) => {
-    const connStr = checkConnectionStr();
-    try {
-      const connInfo = parseConnectionString(connStr);
-      console.log(`连接数据库：${connInfo.host}:${connInfo.port}`);
-      console.log(`用户：${connInfo.username}`);
-      console.log(
-        `类型：${connInfo.type === "mysql" ? "MySQL" : "达梦数据库"}`,
-      );
-      console.log("");
-
-      const conn = await createConnection(connInfo);
-      console.log("数据库连接成功");
-      console.log("");
-
-      await runExec(conn, options);
-
-      await conn.close();
-    } catch (err) {
-      console.error("错误:", err.message);
+    // 先验证必填参数（在连接数据库之前）
+    if (!options.query) {
+      console.error(`错误：缺少必填参数 -q/--query`);
+      console.error(`使用 --help 查看帮助信息`);
       process.exit(1);
     }
+
+    const connInfo = validateConnection(options.connection);
+    const conn = await createConnection(connInfo);
+    console.log("数据库连接成功");
+    console.log("");
+
+    await runExec(conn, options);
+
+    await conn.close();
   });
 
 // 帮助信息（cac 自动生成）
 cli.help();
+
+// 统一错误处理
+function handleCLIError(err) {
+  const message = err.message || String(err);
+
+  // 未知选项错误
+  if (message.includes("Unknown option") || message.includes("unknown option")) {
+    const optionMatch = message.match(/Unknown option[s]?\s+(?:`?([-\w]+)`?|([-\w]+))/i);
+    const unknownOption = optionMatch ? (optionMatch[1] || optionMatch[2]) : "未知选项";
+    console.error(`错误：无效的选项 ${unknownOption}`);
+    console.error(`使用 --help 查看可用的选项`);
+    process.exit(1);
+  }
+
+  // 缺少必填参数
+  if (message.includes("Missing required option") || message.includes("missing required option")) {
+    console.error(`错误：缺少必填参数 -c/--connection`);
+    console.error(`使用 --help 查看帮助信息`);
+    process.exit(1);
+  }
+
+  // 其他错误
+  console.error(`错误：${message}`);
+  console.error(`使用 --help 查看帮助信息`);
+  process.exit(1);
+}
 
 // Only run CLI when executed directly (not when imported as module)
 const isMainModule = process.argv[1] && process.argv[1].endsWith("db-cli.js");
@@ -1194,39 +1206,21 @@ if (isMainModule) {
     process.exit(0);
   }
 
-  // 未知命令检测 - 在解析前检查第一个参数是否为已知命令
-  const firstArg = rawArgs[0];
-  if (!firstArg.startsWith("-")) {
-    const knownCommands = [
-      "import",
-      "i",
-      "export",
-      "e",
-      "exec",
-      "x",
-      "help",
-      "--help",
-      "-h",
-    ];
-    if (!knownCommands.includes(firstArg)) {
-      console.error(`错误：不识别的命令 '${firstArg}'`);
-      console.error("可用命令：import (i), export (e), exec (x)");
-      console.error("使用 <命令> --help 查看具体命令的帮助");
-      console.error("示例：db exec --help");
-      process.exit(1);
-    }
-  }
-
-  // 解析命令行参数 - 捕获未知选项错误
+  // 解析命令行参数，捕获所有错误并显示友好提示
   try {
     cli.parse();
   } catch (err) {
-    if (err.message && err.message.includes("Unknown option")) {
-      const match = err.message.match(/Unknown option `([^`]+)`/);
-      const unknownOpt = match ? match[1] : "unknown";
-      console.error(`不识别的选项 '${unknownOpt}'`);
-      process.exit(1);
-    }
-    throw err;
+    handleCLIError(err);
   }
+
+  // 捕获未处理的拒绝
+  process.on("unhandledRejection", (err) => {
+    if (err instanceof Error) {
+      console.error(`错误：${err.message}`);
+    } else {
+      console.error(`错误：${err}`);
+    }
+    console.error(`使用 --help 查看帮助信息`);
+    process.exit(1);
+  });
 }
