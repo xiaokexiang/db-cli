@@ -125,12 +125,14 @@ function updateProgress(current, total) {
 
 // SQL 解析器 - 导出供测试使用
 // 支持 MySQL DELIMITER 语法和达梦数据库 / 分隔符
+// 返回格式：[{ sql: string, startLine: number, endLine: number }, ...]
 export function readSqlFile(filePath, dbType = "dm") {
   const content = fs.readFileSync(filePath, "utf-8");
 
   const statements = [];
   const lines = content.split("\n");
   let currentStatement = "";
+  let currentStatementStartLine = 1; // 记录当前语句的起始行号
 
   // MySQL DELIMITER 处理状态
   // insideDelimiterBlock = true 表示当前在使用自定义分隔符（如 $$）
@@ -139,24 +141,53 @@ export function readSqlFile(filePath, dbType = "dm") {
 
   // 达梦数据库存储过程状态
   let inDamengProcedure = false;
+  // 单引号字符串状态（用于跟踪是否在字符串内）
+  let inSingleQuote = false;
 
-  for (let line of lines) {
+  // 计算一行中未配对的单引号数量（SQL 中使用 '' 转义单引号）
+  function countUnescapedQuotes(str) {
+    let count = 0;
+    let i = 0;
+    while (i < str.length) {
+      if (str[i] === "'") {
+        // 检查是否是转义的单引号 ''
+        if (i + 1 < str.length && str[i + 1] === "'") {
+          i += 2; // 跳过转义的单引号
+        } else {
+          count++;
+          i++;
+        }
+      } else {
+        i++;
+      }
+    }
+    return count;
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const originalLine = line;
-    line = line.trim();
+    const lineNumber = i + 1; // 行号从 1 开始
+    const trimmedLine = line.trim();
 
     // 跳过空行
-    if (!line) continue;
+    if (!trimmedLine) continue;
 
     // 注释处理
     // -- 注释：两种数据库都支持
-    if (line.startsWith("--")) continue;
+    if (trimmedLine.startsWith("--")) continue;
     // # 注释：仅 MySQL 支持
-    if (dbType === "mysql" && line.startsWith("#")) continue;
+    if (dbType === "mysql" && trimmedLine.startsWith("#")) continue;
+
+    // 如果是新语句的开始，记录起始行号
+    if (currentStatement === "") {
+      currentStatementStartLine = lineNumber;
+    }
 
     // MySQL DELIMITER 处理
     if (dbType === "mysql") {
       // 检查是否是 DELIMITER 语句
-      const delimiterMatch = line.match(/^DELIMITER\s+(\S+)\s*$/i);
+      const delimiterMatch = trimmedLine.match(/^DELIMITER\s+(\S+)\s*$/i);
       if (delimiterMatch) {
         const newDelimiter = delimiterMatch[1];
         // 切换分隔符模式
@@ -165,7 +196,11 @@ export function readSqlFile(filePath, dbType = "dm") {
           insideDelimiterBlock = false;
           currentDelimiter = ";";
           if (currentStatement.trim()) {
-            statements.push(currentStatement.trim());
+            statements.push({
+              sql: currentStatement.trim(),
+              startLine: currentStatementStartLine,
+              endLine: lineNumber,
+            });
             currentStatement = "";
           }
         } else {
@@ -178,15 +213,23 @@ export function readSqlFile(filePath, dbType = "dm") {
 
       // 在 DELIMITER 块内，检查是否遇到自定义分隔符（如 $$ 在行尾）
       if (insideDelimiterBlock) {
+        // 更新单引号状态
+        const quoteCount = countUnescapedQuotes(originalLine);
+        inSingleQuote = (inSingleQuote + quoteCount) % 2 === 1;
+
         // 检查行尾是否是自定义分隔符（如 "END $$"）
-        if (line.endsWith(currentDelimiter)) {
+        if (trimmedLine.endsWith(currentDelimiter)) {
           // 移除行尾的分隔符
-          const lineWithoutDelimiter = line.substring(0, line.length - currentDelimiter.length).trim();
+          const lineWithoutDelimiter = trimmedLine.substring(0, trimmedLine.length - currentDelimiter.length).trim();
           if (lineWithoutDelimiter) {
             currentStatement += lineWithoutDelimiter + "\n";
           }
           if (currentStatement.trim()) {
-            statements.push(currentStatement.trim());
+            statements.push({
+              sql: currentStatement.trim(),
+              startLine: currentStatementStartLine,
+              endLine: lineNumber,
+            });
           }
           currentStatement = "";
           insideDelimiterBlock = false;
@@ -201,23 +244,31 @@ export function readSqlFile(filePath, dbType = "dm") {
     // 达梦数据库存储过程处理
     if (dbType === "dm") {
       // 检查是否是存储过程开始
-      if (line.includes("CREATE OR REPLACE PROCEDURE") || line.includes("CREATE PROCEDURE")) {
+      if (trimmedLine.includes("CREATE OR REPLACE PROCEDURE") || trimmedLine.includes("CREATE PROCEDURE")) {
         inDamengProcedure = true;
       }
 
       // 检查是否是 / 分隔符（达梦存储过程结束符）
-      if (line === "/") {
+      if (trimmedLine === "/") {
         if (inDamengProcedure) {
           // 结束存储过程
           if (currentStatement.trim()) {
-            statements.push(currentStatement.trim());
+            statements.push({
+              sql: currentStatement.trim(),
+              startLine: currentStatementStartLine,
+              endLine: lineNumber,
+            });
           }
           currentStatement = "";
           inDamengProcedure = false;
         } else {
           // 普通语句的 / 分隔符
           if (currentStatement.trim()) {
-            statements.push(currentStatement.trim());
+            statements.push({
+              sql: currentStatement.trim(),
+              startLine: currentStatementStartLine,
+              endLine: lineNumber,
+            });
             currentStatement = "";
           }
         }
@@ -227,15 +278,28 @@ export function readSqlFile(filePath, dbType = "dm") {
       // 在存储过程内，累积所有行（包括分号）
       if (inDamengProcedure) {
         currentStatement += originalLine + "\n";
+        // 更新单引号状态
+        const quoteCount = countUnescapedQuotes(originalLine);
+        inSingleQuote = (inSingleQuote + quoteCount) % 2 === 1;
         continue;
       }
 
-      // 普通达梦语句：分号结束
+      // 普通达梦语句：分号结束（需要检查分号是否在字符串外）
+      // 先更新单引号状态，然后检查行尾分号是否有效
+      const quoteCount = countUnescapedQuotes(originalLine);
+      const wasInSingleQuote = inSingleQuote;
+      inSingleQuote = (inSingleQuote + quoteCount) % 2 === 1;
+
+      // 只有当分号不在字符串内时，才视为语句结束
       currentStatement += originalLine + "\n";
-      if (line.endsWith(";")) {
+      if (trimmedLine.endsWith(";") && !inSingleQuote) {
         const trimmed = currentStatement.trim();
         if (trimmed) {
-          statements.push(trimmed);
+          statements.push({
+            sql: trimmed,
+            startLine: currentStatementStartLine,
+            endLine: lineNumber,
+          });
         }
         currentStatement = "";
       }
@@ -243,11 +307,20 @@ export function readSqlFile(filePath, dbType = "dm") {
     }
 
     // 标准 ; 分隔符处理（其他数据库）
+    // 更新单引号状态
+    const quoteCount = countUnescapedQuotes(originalLine);
+    inSingleQuote = (inSingleQuote + quoteCount) % 2 === 1;
+
     currentStatement += originalLine + "\n";
-    if (line.endsWith(";")) {
+    // 只有当分号不在字符串内时，才视为语句结束
+    if (trimmedLine.endsWith(";") && !inSingleQuote) {
       const trimmed = currentStatement.trim();
       if (trimmed) {
-        statements.push(trimmed);
+        statements.push({
+          sql: trimmed,
+          startLine: currentStatementStartLine,
+          endLine: lineNumber,
+        });
       }
       currentStatement = "";
     }
@@ -255,7 +328,11 @@ export function readSqlFile(filePath, dbType = "dm") {
 
   // 处理剩余语句
   if (currentStatement.trim()) {
-    statements.push(currentStatement.trim());
+    statements.push({
+      sql: currentStatement.trim(),
+      startLine: currentStatementStartLine,
+      endLine: lines.length,
+    });
   }
 
   return statements;
@@ -273,7 +350,12 @@ async function executeSqlStatements(conn, statements, config) {
   updateProgress(0, total);
 
   for (let i = 0; i < statements.length; i++) {
-    const statement = statements[i];
+    const stmt = statements[i];
+    // 支持新旧两种格式：新格式是对象 {sql, startLine, endLine}，旧格式是字符串
+    const sql = typeof stmt === "object" ? stmt.sql : stmt;
+    const startLine = typeof stmt === "object" ? stmt.startLine : null;
+    const endLine = typeof stmt === "object" ? stmt.endLine : null;
+
     try {
       // MySQL: DDL 和管理命令不能用 prepared statement 执行，需要使用 raw.query
       if (conn.type === "mysql") {
@@ -281,8 +363,8 @@ async function executeSqlStatements(conn, statements, config) {
         // 包含：USE, SET, SHOW, CREATE, DROP, ALTER, TRUNCATE, REPLACE, RENAME, LOAD, LOCK, UNLOCK
         // GRANT, REVOKE, FLUSH, RESET, CALL, BEGIN, COMMIT, ROLLBACK 等
         const ddlPattern = /^\s*(USE|SET|SHOW|CREATE|DROP|ALTER|TRUNCATE|REPLACE|RENAME|LOAD|LOCK|UNLOCK|GRANT|REVOKE|FLUSH|RESET|CALL|BEGIN|COMMIT|ROLLBACK|START\s+TRANSACTION)\s*/i;
-        if (ddlPattern.test(statement)) {
-          await conn.raw.query(statement);
+        if (ddlPattern.test(sql)) {
+          await conn.raw.query(sql);
           success++;
           const progressStep = Math.max(1, Math.floor(total / 100));
           if (i + 1 - lastProgressUpdate >= progressStep) {
@@ -293,7 +375,7 @@ async function executeSqlStatements(conn, statements, config) {
         }
       }
 
-      await conn.execute(statement);
+      await conn.execute(sql);
       success++;
       const progressStep = Math.max(1, Math.floor(total / 100));
       if (i + 1 - lastProgressUpdate >= progressStep) {
@@ -302,17 +384,40 @@ async function executeSqlStatements(conn, statements, config) {
       }
     } catch (err) {
       errors++;
-      const preview = statement.substring(0, 100).replace(/\n/g, " ");
+
+      // 构建详细的错误信息
+      const lineNumber = startLine || (i + 1);
+
       errorDetails.push({
         index: i + 1,
         message: err.message,
-        preview: preview + (statement.length > 100 ? "..." : ""),
+        lineNumber: lineNumber,
+        sql: sql, // 保存完整 SQL
+        errorCode: err.code || err.errno || null,
       });
       if (!continueOnError) {
         console.log();
-        console.log(`\n第 ${i + 1} 条语句执行失败，正在回滚...`);
+        console.log(`❌ 第 ${lineNumber} 行 SQL 执行失败:`);
+        console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+
+        // 显示错误代码（如果有）
+        if (err.code || err.errno) {
+          console.log(`错误代码：${err.code || err.errno}`);
+        }
+
+        // 显示错误原因
+        console.log(`错误原因：${err.message}`);
+
+        // 显示完整 SQL（短 SQL 显示全部，长 SQL 显示前 500 字符）
+        if (sql.length <= 200) {
+          console.log(`\nSQL 语句:\n${sql}`);
+        } else {
+          console.log(`\nSQL 语句（前 500 字符）:\n${sql.substring(0, 500)}...`);
+        }
+
+        console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
         await conn.rollback();
-        console.log("事务已回滚");
+        console.log(`\n💾 事务已回滚`);
         throw err;
       }
     }
@@ -324,11 +429,31 @@ async function executeSqlStatements(conn, statements, config) {
 
   console.log(`\n完成：${success} 成功，${errors} 失败`);
 
-  if (errorDetails.length > 0) {
-    console.log("\n失败语句详情:");
-    for (const err of errorDetails) {
-      console.log(`\n语句 ${err.index}: ${err.message}`);
-      console.log(`  SQL: ${err.preview}`);
+  // --continue-on-error 模式下显示失败统计和前 10 条失败 SQL
+  if (errorDetails.length > 0 && continueOnError) {
+    const displayCount = Math.min(10, errorDetails.length);
+    console.log(`\n⚠️  共有 ${errorDetails.length} 条语句执行失败，以下是前 ${displayCount} 条:`);
+    for (let i = 0; i < displayCount; i++) {
+      const err = errorDetails[i];
+      console.log(`\n❌ 第 ${err.lineNumber} 行:`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+
+      // 显示错误代码（如果有）
+      if (err.errorCode) {
+        console.log(`错误代码：${err.errorCode}`);
+      }
+
+      // 显示错误原因
+      console.log(`错误原因：${err.message}`);
+
+      // 显示 SQL 语句（短 SQL 显示全部，长 SQL 显示前 300 字符）
+      if (err.sql.length <= 150) {
+        console.log(`\nSQL 语句:\n${err.sql}`);
+      } else {
+        console.log(`\nSQL 语句（前 300 字符）:\n${err.sql.substring(0, 300)}...`);
+      }
+
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     }
   }
 
@@ -905,7 +1030,7 @@ cli
 
       await conn.close();
     } catch (err) {
-      console.error("错误:", err.message);
+      // 错误详情已在 executeSqlStatements 中打印
       process.exit(1);
     }
   });
